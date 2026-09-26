@@ -7,7 +7,7 @@ const examplePath = new URL('../.env.example', import.meta.url)
 let env = readFileSync(existsSync(envPath) ? envPath : examplePath, 'utf8')
 
 const out: Record<string, string> = {}
-for (const key of ['ORG_PRIVATE_KEY', 'HR_PRIVATE_KEY']) {
+for (const key of ['ORG_PRIVATE_KEY', 'HR_PRIVATE_KEY', 'AGENT_PRIVATE_KEY']) {
   const m = env.match(new RegExp(`^${key}=(.*)$`, 'm'))
   let pk = m?.[1]?.trim() ?? ''
   if (!/^0x[0-9a-fA-F]{64}$/.test(pk)) {
@@ -19,3 +19,4 @@ for (const key of ['ORG_PRIVATE_KEY', 'HR_PRIVATE_KEY']) {
 writeFileSync(envPath, env)
 console.log('ORG wallet (fund with Sepolia ETH):', out.ORG_PRIVATE_KEY)
 console.log('HR  wallet (fund with a little Sepolia ETH):', out.HR_PRIVATE_KEY)
+console.log('AGENT wallet (fund with Base Sepolia USDC, faucet.circle.com):', out.AGENT_PRIVATE_KEY)

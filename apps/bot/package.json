@@ -1,22 +1,21 @@
 {
-  "name": "@kakunin/core",
+  "name": "@kakunin/bot",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "main": "src/index.ts",
   "scripts": {
+    "dev": "tsx src/index.ts",
     "test": "vitest run"
   },
   "dependencies": {
-    "cborg": "6.1.2",
+    "@kakunin/core": "workspace:*",
+    "grammy": "1.46.0",
+    "dotenv": "18.0.3",
     "viem": "2.56.9"
   },
   "devDependencies": {
+    "tsx": "4.23.15",
     "@types/node": "22.15.0",
     "vitest": "5.0.1"
-  },
-  "exports": {
-    ".": "./src/index.ts",
-    "./store": "./src/store.ts"
   }
 }

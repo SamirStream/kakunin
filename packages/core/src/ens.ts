@@ -1,7 +1,7 @@
 // ENSv2 (Sepolia) helpers for the Kakunin team registry: constants, reads, writes, history from events.
 // Contract facts come from docs.ens.domains/ensv2/* and the verified ABIs in ../abis (see specs/DECISIONS.md).
 import {
-  createPublicClient, http, keccak256, parseAbiItem, toHex, zeroAddress,
+  createPublicClient, fallback, http, keccak256, parseAbiItem, toHex, zeroAddress,
   type Account, type Address, type Hex, type PublicClient, type WalletClient,
 } from 'viem'
 import { sepolia } from 'viem/chains'
@@ -28,8 +28,17 @@ export const labelhash = (label: string): bigint => BigInt(keccak256(toHex(label
 export const dnsName = (name: string): Hex => toHex(packetToBytes(normalize(name)))
 export const memberName = (label: string, d = DEPLOYMENT) => `${label}.${d.teamName}`
 
-export function publicClient(rpc = process.env.SEPOLIA_RPC_URL ?? 'https://ethereum-sepolia-rpc.publicnode.com'): PublicClient {
-  return createPublicClient({ chain: sepolia, transport: http(rpc) }) as PublicClient
+/** Public Sepolia RPCs tried in order after the configured one. A rate limit or an outage on one must not take the demo down. */
+export const FALLBACK_RPCS = ['https://ethereum-sepolia-rpc.publicnode.com', 'https://sepolia.drpc.org', 'https://1rpc.io/sepolia'] as const
+
+/** The configured RPC first (SEPOLIA_RPC_URL, ideally a private Alchemy/Infura URL), then the public ones; each with retries and a timeout. */
+export function rpcUrls(primary = process.env.SEPOLIA_RPC_URL): string[] {
+  return [...new Set([primary, ...FALLBACK_RPCS].filter((u): u is string => !!u && u.startsWith('http')))]
+}
+
+export function publicClient(rpc = process.env.SEPOLIA_RPC_URL): PublicClient {
+  const transports = rpcUrls(rpc).map((u) => http(u, { retryCount: 0, timeout: 8_000 }))
+  return createPublicClient({ chain: sepolia, transport: fallback(transports, { rank: false, retryCount: 1 }) }) as PublicClient
 }
 
 // ---------- reads ----------

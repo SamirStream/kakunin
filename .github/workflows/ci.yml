@@ -1,0 +1,27 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install pnpm
+        run: npm install -g pnpm@12.6.0
+      - name: Install dependencies (lockfile is verified against the supply-chain policy)
+        run: pnpm install --frozen-lockfile
+      - name: Unit tests (core, bot, paid-api)
+        run: pnpm test
+      - name: Typecheck web and paid-api
+        run: |
+          pnpm --filter @kakunin/web exec tsc --noEmit
+          pnpm --filter @kakunin/paid-api exec tsc --noEmit
+      - name: Audit production dependencies
+        run: pnpm audit --prod

@@ -22,6 +22,8 @@
     "./ens": "./src/ens.ts",
     "./auth": "./src/auth.ts",
     "./access": "./src/access.ts",
-    "./telegram": "./src/telegram.ts"
+    "./telegram": "./src/telegram.ts",
+    "./provision": "./src/provision.ts",
+    "./crypto": "./src/crypto.ts"
   }
 }

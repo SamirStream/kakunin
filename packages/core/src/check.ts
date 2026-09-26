@@ -5,7 +5,7 @@ import { decodeAbiParameters, encodeFunctionData, namehash, parseAbi, type Addre
 import { attestationRecordKey, signAttestation, toBase64, verifyAttestation, type VerifyResult } from './attestation'
 import {
   ABIS, DEPLOYMENT, dnsName, getMemberState, listMembers, readAddress, readText, setMemberText,
-  type MemberRecord, type MemberState, type TxCtx,
+  type Deployment, type MemberRecord, type MemberState, type TxCtx,
 } from './ens'
 import { findLookalike } from './lookalike'
 
@@ -41,6 +41,8 @@ export type CheckResult =
 /** Everything the check needs from the chain, so the orchestration can be unit-tested with a fake. */
 export interface Reader {
   orgName: string
+  /** the organisation's ENSv2 deployment (registries and resolvers named in a Proof) */
+  deployment: Deployment
   listMembers(): Promise<MemberRecord[]>
   getState(label: string): Promise<MemberState>
   /** via UniversalResolverV2 (active names only) */
@@ -55,6 +57,7 @@ const TEXT_ABI = parseAbi(['function text(bytes32 node, string key) view returns
 export function chainReader(pub: PublicClient, d = DEPLOYMENT): Reader {
   return {
     orgName: d.orgName,
+    deployment: d,
     listMembers: () => listMembers(pub, d),
     getState: (label) => getMemberState(pub, label, d),
     readText: (fqn, key) => readText(pub, fqn, key, d),
@@ -105,7 +108,7 @@ export async function checkIdentity(r: Reader, input: CheckInput, directory: Dir
       if (!res.valid) return { status: 'unknown', org, reason: 'invalid-attestation' }
       const proof: Proof = {
         chain: 'sepolia', name: info.fqn, owner: state.owner, attesterName: org, attester,
-        recordKey: attestationRecordKey(TELEGRAM_KEY, org), envelope, teamRegistry: DEPLOYMENT.teamRegistry, teamResolver: DEPLOYMENT.teamResolver,
+        recordKey: attestationRecordKey(TELEGRAM_KEY, org), envelope, teamRegistry: r.deployment.teamRegistry, teamResolver: r.deployment.teamResolver,
       }
       return { status: 'verified', org, member: info, attestation: res, proof }
     }

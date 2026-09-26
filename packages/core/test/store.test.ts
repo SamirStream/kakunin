@@ -12,7 +12,8 @@ function fakeUpstash(): { fetch: typeof fetch; calls: string[][] } {
   const run = (c: (string | number)[]): unknown => {
     const [op, key, ...rest] = c.map(String)
     switch (op) {
-      case 'SET': kv.set(key, rest[0]); return 'OK'
+      case 'SET': if (rest.includes('NX') && kv.has(key)) return null; kv.set(key, rest[0]); return 'OK'
+      case 'DEL': return kv.delete(key) || lists.delete(key) || sets.delete(key) ? 1 : 0
       case 'GET': return kv.get(key) ?? null
       case 'GETDEL': { const v = kv.get(key) ?? null; kv.delete(key); return v }
       case 'HSET': (hashes.get(key) ?? hashes.set(key, new Map()).get(key)!).set(rest[0], rest[1]); return 1
@@ -78,8 +79,61 @@ describe.each(backends)('Store contract: %s', (_name, make) => {
     const s = make()
     await s.addAlert({ org: 'o.eth', kind: 'unknown', subject: { username: 'a' }, detail: '1' })
     await s.addAlert({ org: 'o.eth', kind: 'lookalike', subject: { username: 'b' }, detail: '2' })
-    expect((await s.alerts()).map((a) => a.detail)).toEqual(['2', '1'])
-    expect(await s.alerts(1)).toHaveLength(1)
+    const o = s.forOrg('o.eth')
+    expect((await o.alerts()).map((a) => a.detail)).toEqual(['2', '1'])
+    expect(await o.alerts(1)).toHaveLength(1)
+    expect(await s.alerts()).toEqual([]) // the demo org's feed is separate
+    await o.clearAlerts()
+    expect(await o.alerts()).toEqual([])
+  })
+  it('organisations are isolated: directory, alerts, admins and invites', async () => {
+    const s = make()
+    const a = s.forOrg('acme.eth'), b = s.forOrg('beta.eth')
+    await a.upsertMember({ label: 'zoe', telegramId: '5', username: 'zoe' })
+    await b.upsertMember({ label: 'yan', telegramId: '6' })
+    await s.upsertMember({ label: 'demo', telegramId: '7' })
+    expect((await a.directory()).map((e) => e.label)).toEqual(['zoe'])
+    expect((await b.directory()).map((e) => e.label)).toEqual(['yan'])
+    expect((await s.directory()).map((e) => e.label)).toEqual(['demo'])
+    await a.addOrgAdminChat(1)
+    await b.addOrgAdminChat(2)
+    expect(await a.adminChats()).toEqual([1])
+    expect(await b.adminChats()).toEqual([2])
+    expect(await s.adminChats()).toEqual([])
+    expect(await s.adminOrgs(1)).toEqual(['acme.eth'])
+    const inv = await a.createInvite('zoe')
+    expect((await s.peekInvite(inv.token))).toMatchObject({ label: 'zoe', org: 'acme.eth', kind: 'member' })
+    const adm = await a.createInvite('-', 'admin')
+    expect((await s.consumeInvite(adm.token))?.kind).toBe('admin')
+  })
+  it('the same person can belong to several orgs; identity refresh reaches all of them', async () => {
+    const s = make()
+    await s.forOrg('acme.eth').upsertMember({ label: 'zoe', telegramId: '5', username: 'old' })
+    await s.forOrg('beta.eth').upsertMember({ label: 'zed', telegramId: '5', username: 'old' })
+    expect((await s.memberOrgs('5')).sort()).toEqual(['acme.eth', 'beta.eth'])
+    expect(await s.refreshIdentity('5', 'New', 'Zoe')).toBe(true)
+    expect((await s.forOrg('acme.eth').directory())[0].username).toBe('new')
+    expect((await s.forOrg('beta.eth').directory())[0].username).toBe('new')
+    expect(await s.memberOrgs('404')).toEqual([])
+  })
+  it('org records, name claims and provisioning jobs', async () => {
+    const s = make()
+    expect(await s.getOrg('acme.eth')).toBeNull()
+    const rec = { name: 'acme.eth', deployment: {} as never, owner: '0x0000000000000000000000000000000000000001' as const, operator: '0x0000000000000000000000000000000000000002' as const, operatorKey: 'sealed', createdAt: 1, txs: [] }
+    await s.putOrg(rec)
+    await s.putOrg({ ...rec, createdAt: 2 })
+    expect((await s.listOrgs()).map((o) => o.createdAt)).toEqual([2])
+    expect((await s.getOrg('acme.eth'))?.operatorKey).toBe('sealed')
+    expect(await s.claimName('beta.eth', 'job1')).toBe(true)
+    expect(await s.claimName('beta.eth', 'job1')).toBe(true) // same run may re-claim
+    expect(await s.claimName('beta.eth', 'job2')).toBe(false)
+    await s.releaseName('beta.eth')
+    expect(await s.claimName('beta.eth', 'job2')).toBe(true)
+    const job = { id: 'j', name: 'beta.eth', owner: rec.owner, operator: rec.operator, operatorKey: 'k', status: 'running' as const, step: 'fund', data: {}, txs: [], createdAt: 1, updatedAt: 1 }
+    await s.putJob(job)
+    await s.putJob({ ...job, step: 'commit' })
+    expect((await s.getJob('j'))?.step).toBe('commit')
+    expect(await s.getJob('nope')).toBeNull()
   })
   it('admin chats are a set', async () => {
     const s = make()

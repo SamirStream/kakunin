@@ -11,10 +11,17 @@ import resolverAbi from '../abis/PermissionedResolverImpl.json' with { type: 'js
 import deployment from '../../../deployments/sepolia.json' with { type: 'json' }
 
 export const ABIS = { registry: registryAbi, resolver: resolverAbi } as const
-export const DEPLOYMENT = deployment as {
+/**
+ * Where one organisation lives on ENSv2. `orgWallet` owns the member subnames (and appears in every attestation as the owner);
+ * `hrWallet` is the delegated account that runs the team registry. `operator` is set for self-serve orgs, where the Kakunin-managed
+ * key both signs attestations and acts as HR.
+ */
+export interface Deployment {
   orgName: string; teamName: string; orgRegistry: Address; teamRegistry: Address; orgResolver: Address
   teamResolver: Address; orgWallet: Address; hrWallet: Address; fromBlock: number; universalResolver: Address
 }
+/** The reference organisation (kakunin-demo.eth), deployed by scripts/spike-ens.ts. Other organisations come from the store. */
+export const DEPLOYMENT = deployment as Deployment
 
 /** EAC role bits (docs.ens.domains/ensv2/permissioned-registry, /permissioned-resolver). Admin = role << 128. */
 export const ROLE = {
@@ -172,3 +179,14 @@ export async function setAttesterAddress(ctx: TxCtx, address: Address, d = DEPLO
   })
   return { skipped: false as const }
 }
+
+// ---------- ENSv2 Sepolia system contracts (docs.ens.domains/ensv2, verified on Blockscout: see specs/DECISIONS.md) ----------
+export const ENSV2 = {
+  ethRegistrar: '0xabe76f6c8dfced81aa5a2bb8034202a7136b94ca',
+  ethRegistry: '0x657ea849311d3d5823348dded7c2aaafb3ede09e',
+  userRegistryImpl: '0xa80338aaa8d23831cea25e858d1774534abb0263',
+  resolverImpl: '0x14f09fd05d4585759e54844dc9b00147131cf243',
+  factory: '0x9e726eb570beb6bceb495ab8cda7df517d4e841c',
+  usdc: '0x16f95d91dba7da3aca778ec053df0ff6c6a8aa8e',
+  universalResolver: '0x5d25c1d6acbb71b7a28aa7899618a3412a8303e3',
+} as const satisfies Record<string, Address>

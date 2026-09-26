@@ -22,7 +22,8 @@
     "cloud:check": "pnpm --filter @kakunin/scripts exec tsx cloud-check.ts",
     "vercel:env": "pnpm --filter @kakunin/scripts exec tsx vercel-env.ts",
     "store:migrate": "pnpm --filter @kakunin/scripts exec tsx migrate-store.ts",
-    "telegram:menu": "pnpm --filter @kakunin/scripts exec tsx telegram-webhook.ts menu"
+    "telegram:menu": "pnpm --filter @kakunin/scripts exec tsx telegram-webhook.ts menu",
+    "provision": "pnpm --filter @kakunin/scripts exec tsx provision-org.ts"
   },
   "devDependencies": {
     "typescript": "5.9.3"

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
 import { attestationRecordKey, signAttestation, toBase64 } from '../src/attestation'
 import { TELEGRAM_KEY, checkIdentity, type DirectoryEntry, type Reader } from '../src/check'
+import { DEPLOYMENT } from '../src/ens'
 
 const ORG = 'acme.eth'
 const attester = privateKeyToAccount(generatePrivateKey())
@@ -24,6 +25,7 @@ async function fakeChain(opts: { aliceValid?: boolean } = {}) {
   }
   const reader: Reader = {
     orgName: ORG,
+    deployment: DEPLOYMENT,
     listMembers: async () => [
       { label: 'alice', status: 'active', registeredAt: t },
       { label: 'bob', status: 'former', registeredAt: t, revokedAt: t + 500 },

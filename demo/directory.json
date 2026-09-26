@@ -1,0 +1,4 @@
+[
+  { "label": "alice", "telegramId": "100000001", "username": "alice_kakunin", "displayName": "Alice Martin" },
+  { "label": "bob", "telegramId": "100000002", "username": "bob_kakunin", "displayName": "Bob Tanaka" }
+]

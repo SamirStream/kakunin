@@ -1,0 +1,125 @@
+// The Kakunin check: "is this person really a member of <org>?" -> verified | former | lookalike | unknown.
+// On-chain (ENSv2 registry + text records + attestation) is the source of truth; the off-chain `directory`
+// (built by the bot at onboarding) only maps @username / display name -> numeric Telegram ID -> member label.
+import { decodeAbiParameters, encodeFunctionData, namehash, parseAbi, type Address, type LocalAccount, type PublicClient } from 'viem'
+import { attestationRecordKey, signAttestation, toBase64, verifyAttestation, type VerifyResult } from './attestation'
+import {
+  ABIS, DEPLOYMENT, dnsName, getMemberState, listMembers, readAddress, readText, setMemberText,
+  type MemberRecord, type MemberState, type TxCtx,
+} from './ens'
+import { findLookalike } from './lookalike'
+
+export const TELEGRAM_KEY = 'org.telegram.id'
+
+export interface DirectoryEntry { label: string; telegramId: string; username?: string; displayName?: string }
+export interface CheckInput { telegramId?: string; username?: string; displayName?: string }
+
+export interface MemberInfo { label: string; fqn: string; role: string | null; since: string | null; telegramId: string }
+export type CheckResult =
+  | { status: 'verified'; org: string; member: MemberInfo; attestation: Extract<VerifyResult, { valid: true }> }
+  | { status: 'former'; org: string; member: MemberInfo; revokedAt: number | null }
+  | { status: 'lookalike'; org: string; lookalikeOf: { label: string; fqn: string; handle: string }; distance: number }
+  | { status: 'unknown'; org: string; reason?: 'invalid-attestation' | 'no-identifier' }
+
+/** Everything the check needs from the chain, so the orchestration can be unit-tested with a fake. */
+export interface Reader {
+  orgName: string
+  listMembers(): Promise<MemberRecord[]>
+  getState(label: string): Promise<MemberState>
+  /** via UniversalResolverV2 (active names only) */
+  readText(fqn: string, key: string): Promise<string | null>
+  /** straight from the team resolver contract (works for revoked names: unregister does not clear records) */
+  readTextDirect(fqn: string, key: string): Promise<string | null>
+  attesterAddress(): Promise<Address | null>
+}
+
+const TEXT_ABI = parseAbi(['function text(bytes32 node, string key) view returns (string)'])
+
+export function chainReader(pub: PublicClient, d = DEPLOYMENT): Reader {
+  return {
+    orgName: d.orgName,
+    listMembers: () => listMembers(pub, d),
+    getState: (label) => getMemberState(pub, label, d),
+    readText: (fqn, key) => readText(pub, fqn, key, d),
+    async readTextDirect(fqn, key) {
+      try {
+        const data = encodeFunctionData({ abi: TEXT_ABI, functionName: 'text', args: [namehash(fqn), key] })
+        const raw = (await pub.readContract({
+          address: d.teamResolver, abi: ABIS.resolver, functionName: 'resolve', args: [dnsName(fqn), data],
+        })) as `0x${string}`
+        const [value] = decodeAbiParameters([{ type: 'string' }], raw)
+        return value || null
+      } catch {
+        return null
+      }
+    },
+    attesterAddress: () => readAddress(pub, d.orgName, d),
+  }
+}
+
+const strip = (h: string) => h.trim().replace(/^@/, '').toLowerCase()
+const fqnOf = (org: string, label: string) => `${label}.team.${org}`
+
+async function loadMember(r: Reader, m: MemberRecord, active: boolean) {
+  const fqn = fqnOf(r.orgName, m.label)
+  const read = active ? r.readText : r.readTextDirect
+  const [role, since, id] = await Promise.all([read(fqn, 'org.role'), read(fqn, 'org.since'), read(fqn, TELEGRAM_KEY)])
+  return { info: { label: m.label, fqn, role, since, telegramId: id ?? '' } satisfies MemberInfo, onchainId: id }
+}
+
+export async function checkIdentity(r: Reader, input: CheckInput, directory: DirectoryEntry[]): Promise<CheckResult> {
+  const org = r.orgName
+  const byUser = input.username ? directory.find((e) => e.username && strip(e.username) === strip(input.username!)) : undefined
+  const telegramId = input.telegramId ?? byUser?.telegramId
+  if (!telegramId && !input.username && !input.displayName) return { status: 'unknown', org, reason: 'no-identifier' }
+
+  if (telegramId) {
+    // Match on-chain: the org.telegram.id record is the identity binding (usernames are mutable, IDs are not).
+    for (const m of await r.listMembers()) {
+      const active = m.status === 'active'
+      const { info, onchainId } = await loadMember(r, m, active)
+      if (onchainId !== telegramId) continue
+      if (!active) return { status: 'former', org, member: info, revokedAt: m.revokedAt ?? null }
+      const [envelope, attester, state] = await Promise.all([
+        r.readText(info.fqn, attestationRecordKey(TELEGRAM_KEY, org)), r.attesterAddress(), r.getState(m.label),
+      ])
+      if (!envelope || !attester) return { status: 'unknown', org, reason: 'invalid-attestation' }
+      const res = await verifyAttestation({ name: info.fqn, address: state.owner, key: TELEGRAM_KEY, value: telegramId }, envelope, attester)
+      return res.valid ? { status: 'verified', org, member: info, attestation: res } : { status: 'unknown', org, reason: 'invalid-attestation' }
+    }
+  }
+
+  // Not a member (past or present): does the handle / display name imitate one?
+  const candidates = directory.map((e) => ({ id: e.label, values: [e.username, e.displayName, e.label].filter(Boolean) as string[] }))
+  for (const q of [input.username, input.displayName].filter(Boolean) as string[]) {
+    const hit = findLookalike(q, candidates)
+    if (hit) return { status: 'lookalike', org, lookalikeOf: { label: hit.id, fqn: fqnOf(org, hit.id), handle: hit.value }, distance: hit.distance }
+  }
+  return { status: 'unknown', org }
+}
+
+/**
+ * Onboarding: the ORG key signs the attestation (the org ENS name is the attester); the HR key writes both records on
+ * the member's subname (HR holds ROLE_SET_TEXT on the team resolver only).
+ */
+export async function issueTelegramAttestation(
+  args: { org: { account: LocalAccount }; hr: TxCtx; label: string; telegramId: string },
+  d = DEPLOYMENT,
+) {
+  const state = await getMemberState(args.hr.pub, args.label, d)
+  if (state.status !== 'REGISTERED') throw new Error(`${args.label} is not an active member`)
+  const fqn = fqnOf(d.orgName, args.label)
+  // Idempotent: keep the existing attestation if it still verifies for this ID.
+  const [current, attesterNow] = await Promise.all([
+    readText(args.hr.pub, fqn, attestationRecordKey(TELEGRAM_KEY, d.orgName), d), readAddress(args.hr.pub, d.orgName, d),
+  ])
+  if (current && attesterNow && (await verifyAttestation({ name: fqn, address: state.owner, key: TELEGRAM_KEY, value: args.telegramId }, current, attesterNow)).valid)
+    return { fqn, envelope: null, skipped: true as const }
+  const envelope = await signAttestation(
+    { name: fqn, address: state.owner, key: TELEGRAM_KEY, value: args.telegramId, issuedAt: Math.floor(Date.now() / 1000) },
+    args.org.account,
+  )
+  await setMemberText(args.hr, args.label, TELEGRAM_KEY, args.telegramId, d)
+  await setMemberText(args.hr, args.label, attestationRecordKey(TELEGRAM_KEY, d.orgName), toBase64(envelope), d)
+  return { fqn, envelope, skipped: false as const }
+}

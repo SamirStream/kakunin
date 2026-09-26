@@ -61,6 +61,5 @@ Before recording: `pnpm cloud:check https://kakunin.xyz` is green, demo token pa
 - Ne dis pas « mock ». Tout est réel sur Sepolia, sauf les deux IDs Telegram de démo (Alice et Bob) : dis « demo members ».
 - Si une étape échoue en direct, refais la prise. Ne montre jamais une erreur sans l'expliquer.
 - Le wizard poursuit le run même si tu quittes la page (localStorage) : tu peux le lancer, tourner d'autres scènes, puis revenir.
-- Le nom choisi doit être libre sur ENSv2 Sepolia (le champ le dit en vert). Une org de test (`kk-prod-check.eth`) existe déjà : ne la réutilise pas.
 - Pitch en direct : un juge scanne le QR d'invitation d'un membre (dashboard → Invite) avec son propre Telegram, ou tu lances la création d'une organisation pendant que tu parles (2,5 min).
 - Le chiffre d'accroche de la version précédente (avis NPA/FBI du 18 sept 2026) a été retiré : ne le cite que si tu as vérifié la source.

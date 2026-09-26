@@ -40,7 +40,7 @@ Three sides:
 
 ## Telegram Mini App
 
-Kakunin also lives **inside Telegram**, where the attacks happen: open [@KakuninxyzBot](https://t.me/KakuninxyzBot), tap the **Kakunin** menu button (or send `/app`). A browser preview with sample data is at [kakunin.xyz/tg](https://kakunin.xyz/tg).
+Kakunin also lives **inside Telegram**, where the attacks happen: open [@KakuninxyzBot](https://t.me/KakuninxyzBot), tap the **Kakunin** menu button (or send `/app`). A browser preview with sample data is at [kakunin.xyz/tg](https://kakunin.xyz/tg); direct link: [t.me/KakuninxyzBot/app](https://t.me/KakuninxyzBot/app).
 
 ![Kakunin Telegram Mini App](docs/screenshots/miniapp.png)
 

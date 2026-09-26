@@ -52,6 +52,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               {NAV.map((n) => (
                 <Link key={n.href} href={n.href} className="rounded-lg px-3 py-1.5 font-medium hover:bg-[var(--info-bg)]">{n.label}</Link>
               ))}
+              <a href="https://t.me/KakuninxyzBot/app" target="_blank" rel="noopener noreferrer" className="btn btn-primary !px-3 !py-1.5 !text-sm">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M21.5 3.2 2.8 10.4c-1.3.5-1.3 1.3-.2 1.6l4.8 1.5 1.8 5.6c.2.6.1.8.7.8.5 0 .7-.2 1-.5l2.3-2.3 4.8 3.5c.9.5 1.5.2 1.7-.8L22.9 4.9c.3-1.3-.5-1.9-1.4-1.7ZM8.6 13.2l9.7-6.1c.5-.3.9-.1.5.2l-8.1 7.3-.3 3.5-1.8-4.9Z" /></svg>
+                Open in Telegram
+              </a>
               <ThemeToggle />
             </nav>
           </div>
@@ -64,7 +68,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a className="font-semibold underline" style={{ color: 'var(--ink)' }} href="https://thearch.consulting" target="_blank" rel="noopener noreferrer">thearch.consulting</a>
               {' '}· Samir Touinssi
             </p>
-            <p>Testnet only (Sepolia) · ETHGlobal Tokyo 2026 · ENSv2 · x402 · Intercepta · <a className="underline" href="https://github.com/SamirStream/kakunin" target="_blank" rel="noopener noreferrer">open source</a></p>
+            <p>
+              <a className="font-semibold underline" style={{ color: 'var(--ink)' }} href="https://t.me/KakuninxyzBot/app" target="_blank" rel="noopener noreferrer">Open the Telegram Mini App</a>
+              {' '}· Testnet only (Sepolia) · ETHGlobal Tokyo 2026 · ENSv2 · x402 · Intercepta ·{' '}
+              <a className="underline" href="https://github.com/SamirStream/kakunin" target="_blank" rel="noopener noreferrer">open source</a>
+            </p>
           </div>
         </footer>
       </body>

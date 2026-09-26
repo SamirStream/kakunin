@@ -1,6 +1,6 @@
-# Demo video script (about 3:45, spoken English)
+# Demo video script (about 3:50, spoken English)
 
-Read it aloud at a calm pace (about 130 words per minute, about 480 spoken words). Cues in *italics* are actions on screen (in French, for you). Record voice and screen together, then cut every wait.
+Read it aloud at a calm pace (about 130 words per minute, about 500 spoken words). Cues in *italics* are actions on screen (in French, for you). Record voice and screen together, then cut every wait.
 
 Before recording: `pnpm cloud:check https://kakunin.xyz` is green, demo token pasted in `/demo`, browser at 1280x720 or larger, notifications off, no `.env` or Vercel tab visible. For the creation scene, use a fresh name you have not used (for example `thearch`) and a wallet you control; start the run first, record the rest of the scene while it works, and cut the wait in editing (real duration: about 2.5 minutes).
 
@@ -42,13 +42,13 @@ Before recording: `pnpm cloud:check https://kakunin.xyz` is green, demo token pa
 
 "Attacks happen on Telegram, so the check lives there. The Mini App is authenticated by Telegram's own signed data, so nobody can request someone else's card. Pick a contact and Kakunin looks them up across every project on the network. Your identity is your numeric Telegram ID, never a username, because usernames can be changed to impersonate someone."
 
-## 3:05 to 3:30 — AI agents  (/demo, section 5, « Run agent purchases »)
+## 3:05 to 3:35 — AI agents  (/demo, section 5, « Run agent purchases »)
 
 *Clique Run agent purchases. Montre le paiement approuvé, puis le clone bloqué avec les raisons.*
 
-"Agents can buy this check per call over x402. Before an agent signs a payment, it screens the destination with the Intercepta API. The real endpoint scores clean and gets paid. The clone is flagged, sanctioned address and known scammer, and the payment is refused before anything is signed."
+"Agents can buy this check per call over x402, and this one follows a written policy. Before it signs, it checks the token is the real USDC, the amount is within its limits, and it screens the destination with the live Intercepta API. The real endpoint scores clean and gets paid. The clone is flagged, sanctioned address and known scammer, and the payment is refused before anything is signed. If the screening fails, it never pays: it asks a human."
 
-## 3:30 to 3:45 — Close  (landing)
+## 3:35 to 3:50 — Close  (landing)
 
 *Retour sur la landing.*
 

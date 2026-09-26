@@ -29,6 +29,7 @@ Go back to local polling at any time: `pnpm webhook:delete`, then `pnpm bot`.
 |---|---|---|
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET`, `ADMIN_SECRET` | bot + webhook auth + `/subscribe` | yes (username no) |
 | `ORG_PRIVATE_KEY`, `HR_PRIVATE_KEY` | the bot signs the attestation (ORG) and writes the records (HR) | yes: throwaway testnet keys |
+| `KAKUNIN_KEY_SECRET` | seals the per-organisation operator keys (self-serve organisations; min 16 chars, keep it stable) | yes |
 | `AGENT_PRIVATE_KEY`, `INTERCEPTA_API_KEY` | demo agent wallet and live screening | yes |
 | `DEMO_ADMIN_TOKEN`, `KAKUNIN_DEMO_SIGNER=1` | enables presenter-only revoke/reset | token: yes |
 | `KAKUNIN_AGENT_PUBLIC=1` | lets anyone run the agent demo (rate limited) | no |

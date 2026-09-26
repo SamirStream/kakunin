@@ -33,7 +33,7 @@ Screens: `/` (hook), `/demo` (main), `/org/kakunin-demo.eth` (dashboard), Telegr
 | 1:45 | **WOW.** HR revokes Bob live. HR is a *separate wallet* that can only manage the team registry. | Scenario 4 (Bob is ✅) → click **HR: revoke Bob** (about 4 s on-chain) → run scenario 4 again → 🕓 **Former member**, revocation date read from ENSv2 events. |
 | 2:30 | **Under the hood.** Hierarchical ENSv2 registries, Enhanced Access Control (HR cannot touch the root name), per-account permissioned resolver, Universal Resolver V2, registry events for history, and the draft ENSIP "Text Record Attestations". | `/org/kakunin-demo.eth` → **HR delegation** panel: HR allowed on the team registry, denied on the org root. Show the architecture diagram from the README. |
 | 2:50 | **Where the attack happens: Telegram.** The Mini App authenticates the person by Telegram's signed `initData`, so nobody can ask for someone else's card. | Phone: open the Mini App → **My card** shows the verified stamp for your own account. Open **Check**, pick a contact with the native picker (`/pick`) → stamp. As admin, **Team** tab → revoke or add a member; the web dashboard updates. |
-| 3:15 | **Agents pay for the check.** An AI agent buys Kakunin checks over x402. Before it signs, it screens the destination with the live Intercepta API. | `/demo` section 5 → **Run agent purchases** (about 4 s): ✅ payment approved (screened low, paid 0.001 USDC, got the verdict) and ⛔ the fake clone blocked before signing, with Intercepta's reasons (sanction_address, known_scammer). |
+| 3:15 | **Agents pay for the check.** An AI agent buys Kakunin checks over x402. Before it signs, its policy checks the token (canonical USDC only), the amount (hard stop $0.05, human above $0.01) and the destination (live Intercepta API). | `/demo` section 5 → **Run agent purchases** (about 4 s): ✅ payment approved (screened low, paid 0.001 USDC, got the verdict) and ⛔ the fake clone blocked before signing, with Intercepta's reasons (sanction_address, known_scammer). |
 | 3:45 | **Vision.** Free for users, paid alerts for projects, native Telegram badges later (Telegram third-party verification). | Landing page |
 
 ## Product beat (add 60 s if you have the time): create a real organisation live
@@ -46,6 +46,9 @@ Open https://kakunin.xyz/create, type a free name, click **Use my browser wallet
 - **Why is the org the owner of member subnames?** Members do not need wallets; the org vouches. HR is limited by EAC roles.
 - **Where does "former member" come from?** An unregistered ENSv2 name disappears from registry state, so we read `LabelUnregistered` events (block timestamp).
 - **What if the record or the attester key changes?** The attestation is rebuilt from live ENS data, so it stops verifying (the ENSIP's design).
+- **Did you use MultiBaas (Curvegrid track)?** No, and the README says so. The track is judged on the agent: token, amount and counterparty policy before signing, fail closed (`packages/core/src/screening.ts`, `apps/paid-api/src/agent.ts`).
+- **Does the token scan run in the demo?** No: Intercepta's Scan Token covers mainnets only and our payments are on Base Sepolia, so the allowlist decides alone there. `pnpm --filter @kakunin/paid-api probe token` shows it on real USDC (Ethereum and Base).
+- **Can I create my own organisation?** Yes, live: `/create` (about 2.5 minutes, gas sponsored on testnet).
 - **atst.me compatibility?** Our tests reproduce a real mainnet attestation byte for byte; the playground only resolves mainnet, so Sepolia demos use our own verifier.
 
 ## Fallbacks

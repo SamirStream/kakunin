@@ -31,15 +31,15 @@ Fake recruiters are how crypto teams get hacked: someone poses as a project memb
 
 **Everyone else.** Forward a suspicious message to the bot, use the web check, open the Telegram Mini App, or call the public API. Answers: **verified** (with a proof anyone can re-check), **former** (revocation date read from ENSv2 events), **lookalike** (homoglyphs, typos) or **unknown**. Every failed check alerts the impersonated project. When HR revokes someone on-chain, every answer changes within seconds.
 
-**AI agents.** The same check is sold per call over x402. The buying agent screens the destination with the live Intercepta API before it signs: a clean address is paid, a flagged one is refused, with the reason on record.
+**AI agents.** The same check is sold per call over x402. The buying agent is policy-aware: before it signs it checks the token (only the canonical USDC), the amount (spending limits) and the destination (live Intercepta screening), then pays, refuses or asks a human, failing closed. A clean address is paid, a flagged one is refused, with the reason on record.
 
 ## How it's made
 
-- **ENSv2 (Sepolia), central to the product.** `kakunin-demo.eth` registered through the ETHRegistrar (commit-reveal, MockUSDC). Org and team registries are `UserRegistry` proxies deployed through the `VerifiableFactory`. HR gets `ROLE_REGISTRAR | ROLE_UNREGISTER | ROLE_RENEW` on the team registry root and `ROLE_SET_TEXT` on a separate team `PermissionedResolver` only; the dashboard reads the role bitmaps live to prove what HR cannot do. Reads go through `UniversalResolverV2`. An unregistered name leaves registry state, so "former member since …" is rebuilt from `LabelRegistered` / `LabelUnregistered` events and block timestamps.
+- **ENSv2 (Sepolia), central to the product.** `kakunin-demo.eth` registered through the ETHRegistrar (commit-reveal, MockUSDC). Org and team registries are `UserRegistry` proxies deployed through the `VerifiableFactory`. HR (for organisations created on the site, a limited operator key) gets `ROLE_REGISTRAR | ROLE_UNREGISTER | ROLE_RENEW` on the team registry root and `ROLE_SET_TEXT` on a separate team `PermissionedResolver` only; the dashboard reads the role bitmaps live to prove what HR cannot do. Reads go through `UniversalResolverV2`. An unregistered name leaves registry state, so "former member since …" is rebuilt from `LabelRegistered` / `LabelUnregistered` events and block timestamps.
 - **Attestations.** Implemented from the draft ENSIP "Text Record Attestations" (PR #85): DAG-CBOR payload, EIP-191 over keccak256, envelope `Tag(0x61747374)`, stored as `attestations[org.telegram.id][kakunin-demo.eth]`. The verifier also accepts the deployed atst.me layout; a test reproduces a real mainnet attestation byte for byte. Any change to the record, the owner or the attester key invalidates it.
 - **Multi-organisation.** Per-organisation directory, alerts, admins and invites; a shared org resolver used by the web app and the bot; provisioning is a resumable 7-task state machine (`packages/core/src/provision.ts`) advanced by the browser one bounded step at a time (fits serverless limits, hashes saved before waiting so retries never double-send). Operator keys are sealed with AES-256-GCM. Verified live on kakunin.xyz: an organisation created through the public API in 155 s, then 24 end-to-end checks (`scripts/e2e-http.ts`) including a real attestation written from a signed Telegram initData.
-- **Telegram.** grammY bot (cloud webhook), and a Mini App whose server validates Telegram's signed `initData` (HMAC-SHA256, replay window) on every request, so the account opening the app is authenticated. Admin actions are limited to accounts that ran `/subscribe`.
-- **x402 + Intercepta.** `@x402/next` seller (real endpoint and a fake clone whose `payTo` is flagged), `@x402/fetch` buyer with an `onBeforePaymentCreation` hook calling the live Intercepta quick-scan API; policy refuses lookalike tokens, enforces limits and fails closed.
+- **Telegram.** grammY bot (cloud webhook), and a Mini App whose server validates Telegram's signed `initData` (HMAC-SHA256, replay window) on every request, so the account opening the app is authenticated. Admin actions are limited, per organisation, to the Telegram accounts that opened the admin link from that organisation's dashboard (the sample organisation also accepts `/subscribe`); an admin of one organisation is refused on another.
+- **x402 + Intercepta.** `@x402/next` seller (real endpoint and a fake clone whose `payTo` is flagged), `@x402/fetch` buyer with an `onBeforePaymentCreation` hook calling the live Intercepta quick-scan API on the payee (and Scan Token on the payment token where the API covers the network, which excludes testnets); a written policy refuses lookalike tokens, enforces spending limits ($0.05 hard stop, human approval above $0.01) and fails closed.
 - **Stack.** TypeScript monorepo (pnpm), viem, Next.js 15 on Vercel, Upstash Redis, 133 tests (core 105, bot 15, paid-api 13), a security review with live attack tests (`docs/SECURITY.md`), and a one-command production check (`pnpm cloud:check`).
 - **Design.** A verdict is a hanko stamped on a document; the kanji carries the meaning (確 元 偽 未) so the answer never depends on colour alone.
 
@@ -105,19 +105,20 @@ Kakunin was built with Claude Code (Anthropic) writing most of the code, tests a
 12. **How does the agent avoid a lookalike token?** It only accepts the canonical USDC address per network (`POLICY.trustedAssets`), whatever the server advertises. On networks the Intercepta Scan Token API covers (mainnets, not testnets), it also asks that API and refuses or holds a risky token; a scan error fails closed.
 13. **Are agents ENS namespaces?** Not yet: the agent has its own wallet only. Giving it a subname with delegated roles is the natural next step.
 
-## Demo video storyboard (2 to 4 minutes, 720p or more, edit out waiting)
+## Demo video storyboard (about 3:50, 720p or more, edit out waiting)
 
-| Time | Show | Say |
+Same timeline as `docs/VIDEO_SCRIPT.md`, which has the word-for-word narration.
+
+| Time | Show | Say (short) |
 |---|---|---|
-| 0:00 | kakunin.xyz hero, stamp lands on the fake recruiter's message | "Fake recruiters are how crypto teams get hacked. Kakunin certifies the real ones." |
-| 0:20 | Type `@alice_kakunn` (lookalike), then `100000001` (verified), open the proof panel | "Every answer is a stamp with a reason, and a proof anyone can check." |
-| 0:55 | Org dashboard: team, EAC delegation panel (HR allowed on team, denied on root) | "ENSv2: HR manages the team but can never touch the project's root name." |
-| 1:30 | Revoke Bob live (Mini App admin tab, or demo button), re-check Bob | "Revoked on-chain, and every answer flips to former member with the date." |
-| 2:10 | Telegram on the phone: forward a message, open the Mini App card | "Where the attack happens: Telegram signs who you are, so a card can't be requested by anyone else." |
-| 2:50 | Demo section 5: agent pays the real API, refuses the clone with Intercepta's reasons | "Agents pay per check over x402, and never pay a scammer." |
-| 3:30 | Repo, README, `pnpm cloud:check` all green | "Open source, tested, and running live." |
-
-Word-for-word narration: `docs/VIDEO_SCRIPT.md` (about 3:45; includes creating a real organisation live).
+| 0:00 | kakunin.xyz hero, stamp lands on the fake recruiter's message | "Fake recruiters are how crypto teams get hacked. Kakunin certifies the real ones, on ENSv2." |
+| 0:20 | `/demo`: `@alice_kakunn` (lookalike, alert), then Alice (verified), proof panel | "Every answer is a stamp with a reason, and a proof anyone can re-check." |
+| 0:50 | `/create`: name plus owner wallet, the progress checklist (wait cut in editing) | "Any project can create its own organisation: the name goes to its wallet, a limited operator runs the team." |
+| 1:35 | New dashboard: sign in with the wallet, Delegation panel (operator allowed on the team, denied on the root) | "The roles are read live from the chain, and the owner can remove the operator on-chain." |
+| 2:05 | Add a member, then revoke it (waits cut) | "One signature to add or revoke; every answer flips to former member with the date." |
+| 2:35 | Telegram on the phone: Mini App card, contact picker, check across all projects | "Where the attack happens; Telegram signs who you are, and identity is the numeric ID." |
+| 3:05 | `/demo` section 5: agent pays the real API, refuses the clone with Intercepta's reasons | "A policy-aware agent: token, amount and counterparty checked before it signs; it fails closed." |
+| 3:35 | Landing | "Open source and live at kakunin.xyz." |
 
 Recording checklist: 1280x720 or larger, no waiting (cut it), show the live URL in the address bar, keep the cursor calm, no secrets on screen (the `.env` file, the admin token field, the Vercel dashboard).
 
@@ -125,7 +126,8 @@ Recording checklist: 1280x720 or larger, no waiting (cut it), show the live URL 
 
 - [ ] Video uploaded, 2 to 4 minutes, at least 720p, link added above
 - [ ] Repo is public, README first screen states the one-sentence summary, AI attribution section is accurate
-- [ ] Prizes selected: ENS and Intercepta (up to 3 allowed; each needs the explanation and feedback above)
-- [ ] `pnpm cloud:check https://kakunin.xyz --agent` is green within the last hour
-- [ ] Mini App opened on a real phone: My card shows "samir", Team tab visible, Check works
+- [ ] Prizes (your choice in the form): ENS, Intercepta and Curvegrid; each needs the explanation above, and ENS and Intercepta need their feedback
+- [ ] `pnpm cloud:check https://kakunin.xyz --agent` is green within the last hour (it spends 0.002 testnet USDC)
+- [ ] Mini App opened on a real phone: My card shows your own name, Team tab visible, Check works
 - [ ] Alert feed on the dashboard looks intentional (run a couple of clean checks before the judges arrive)
+- [ ] Demo video link and the Team handles above are correct

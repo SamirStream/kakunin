@@ -10,6 +10,6 @@
     "spike:ens": "pnpm --filter @kakunin/scripts exec tsx spike-ens.ts"
   },
   "devDependencies": {
-    "typescript": "7.0.2"
+    "typescript": "5.9.3"
   }
 }

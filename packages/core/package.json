@@ -17,6 +17,8 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./store": "./src/store.ts"
+    "./store": "./src/store.ts",
+    "./messages": "./src/messages.ts",
+    "./ens": "./src/ens.ts"
   }
 }

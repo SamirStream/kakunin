@@ -10,3 +10,7 @@ broadcast/
 *.session
 .DS_Store
 scripts/state.sepolia.json
+data/
+apps/web/.next/
+apps/web/next-env.d.ts
+*.tsbuildinfo

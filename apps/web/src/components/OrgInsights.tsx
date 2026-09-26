@@ -11,7 +11,7 @@ function Stat({ value, label, tone }: { value: number | string; label: string; t
   return (
     <div className="card p-4">
       <div className="text-3xl font-extrabold tabular-nums" style={{ color }}>{value}</div>
-      <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>{label}</div>
+      <div className="text-sm" style={{ color: 'var(--muted)' }}>{label}</div>
     </div>
   )
 }

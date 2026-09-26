@@ -33,7 +33,7 @@ export function AgentPayments() {
   }, [])
 
   return (
-    <div className="card space-y-4 p-5">
+    <div id="agents" className="card scroll-mt-24 space-y-4 p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="font-semibold">5 · An AI agent pays for the check (x402), screened before it signs</div>

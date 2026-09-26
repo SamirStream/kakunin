@@ -99,8 +99,7 @@ export default function OrgPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="pill pill-info w-fit">Org dashboard</p>
-          <h1 className="mt-2 text-3xl font-extrabold">{DEPLOYMENT.orgName}</h1>
+                    <h1 className="t-h2">{DEPLOYMENT.orgName}</h1>
           <p className="mono mt-1 break-all" style={{ color: 'var(--muted)' }}>team registry {DEPLOYMENT.teamName} · {short(DEPLOYMENT.teamRegistry)}</p>
         </div>
         <div className="flex items-center gap-2">

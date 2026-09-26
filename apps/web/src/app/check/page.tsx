@@ -37,13 +37,14 @@ export default function CheckPage() {
   }, [])
 
   return (
-    <div className="mx-auto max-w-xl space-y-6">
-      <div>
-        <h1 className="text-3xl font-extrabold">Check a person</h1>
-        <p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>
-          Paste the @username (or numeric Telegram ID) of someone claiming to work for a project. Free and public.
+    <div className="space-y-8">
+      <div className="max-w-2xl space-y-3">
+        <h1 className="t-h2">Check someone before you trust them.</h1>
+        <p className="t-lead" style={{ color: 'var(--muted)' }}>
+          Paste the @username or numeric Telegram ID of a person claiming to work for a project. Free and public.
         </p>
       </div>
+      <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,26rem)_minmax(0,1fr)]">
       <form onSubmit={run} className="card space-y-4 p-5">
         <label className="block space-y-1 text-sm font-medium">
           Organization (ENS name)
@@ -59,17 +60,22 @@ export default function CheckPage() {
         </label>
         <button className="btn btn-primary w-full" disabled={busy || !who.trim()}>{busy ? 'Checking on ENS…' : 'Check'}</button>
       </form>
-      {busy && <div className="h-24 animate-pulse rounded-2xl" style={{ background: 'var(--info-bg)' }} aria-hidden />}
-      {error && <p className="pill pill-bad max-w-full whitespace-normal" role="alert">{error}</p>}
-      {result && (
-        <ResultCard
-          result={result}
-          shareUrl={typeof window === 'undefined' ? undefined : `${window.location.origin}/check?org=${encodeURIComponent(org)}&who=${encodeURIComponent(who.trim())}`}
-        />
-      )}
-      <p className="text-xs" style={{ color: 'var(--muted)' }}>
-        Every failed check that claims an org sends that org an impersonation alert. Prefer Telegram? Forward the message to the Kakunin bot.
-      </p>
+      <div className="space-y-4" aria-live="polite">
+        {busy && <div className="h-40 animate-pulse rounded-[10px]" style={{ background: 'var(--info-bg)' }} aria-hidden />}
+        {error && <p className="pill pill-bad max-w-full whitespace-normal" role="alert">{error}</p>}
+        {result && (
+          <ResultCard
+            result={result}
+            shareUrl={typeof window === 'undefined' ? undefined : `${window.location.origin}/check?org=${encodeURIComponent(org)}&who=${encodeURIComponent(who.trim())}`}
+          />
+        )}
+        {!busy && !result && !error && (
+          <div className="rounded-[10px] p-6 text-sm" style={{ border: '1px dashed var(--line)', color: 'var(--muted)' }}>
+            The answer will be stamped here. Every failed check that claims a project also sends that project an impersonation alert.
+          </div>
+        )}
+      </div>
+      </div>
     </div>
   )
 }

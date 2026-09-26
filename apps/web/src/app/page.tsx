@@ -1,92 +1,122 @@
 import Link from 'next/link'
-import { QuickCheck } from '@/components/QuickCheck'
+import { HeroDesk } from '@/components/HeroDesk'
+import { Stamp, type Verdict } from '@/components/Stamp'
 
-const ANSWERS = [
-  { emoji: '✅', name: 'Verified member', text: 'Active on the project’s ENS team registry, with an attestation signed by the project’s own ENS name.', pill: 'pill-ok' },
-  { emoji: '🕓', name: 'Former member', text: 'Was on the team; HR revoked the subname. Shows exactly when.', pill: 'pill-warn' },
-  { emoji: '⚠️', name: 'Lookalike', text: 'A handle or name that imitates a real member: homoglyphs, typos, swapped letters.', pill: 'pill-bad' },
-  { emoji: '❓', name: 'Unknown', text: 'The project publishes its team and this person is not in it.', pill: 'pill-info' },
-] as const
+const ANSWERS: { status: Verdict; name: string; text: string }[] = [
+  { status: 'verified', name: 'Verified member', text: 'On the project’s team registry and signed by the project’s own ENS name. Comes with proof anyone can check.' },
+  { status: 'former', name: 'Former member', text: 'Was on the team until HR revoked the name. Shows the exact date, read from the chain.' },
+  { status: 'lookalike', name: 'Lookalike', text: 'A handle or display name that imitates a real member: swapped letters, look-alike glyphs, one typo away.' },
+  { status: 'unknown', name: 'Unknown', text: 'The project publishes its team and this person is not on it. No claim of working there stands.' },
+]
 
 const STEPS = [
-  { n: '1', title: 'The project publishes its team', text: 'An ENSv2 registry, team.<org>.eth, holds one subname per member. An HR wallet manages it through Enhanced Access Control, and can never touch the root name.' },
-  { n: '2', title: 'Members get attested in one tap', text: 'HR shares a one-time Telegram link. The bot captures the member’s numeric ID and the project’s ENS name signs it. No wallet needed for the member.' },
-  { n: '3', title: 'Anyone verifies, in a second', text: 'Forward a message to the bot, use the web check, or call the API. Revoke someone on-chain and they flip to “former member” within seconds.' },
-] as const
-
-const STACK = ['ENSv2 registries', 'Enhanced Access Control', 'Text-record attestations', 'Telegram bot', 'x402 payments', 'Intercepta screening'] as const
+  { n: '1', title: 'The project publishes its team', text: 'Each member is a name on an ENSv2 registry, team.project.eth. An HR wallet manages it and can never touch the project’s root name.' },
+  { n: '2', title: 'Members prove their account once', text: 'HR sends a one-time Telegram link. The member opens it, and the project’s ENS name signs their numeric Telegram ID. No wallet, no forms.' },
+  { n: '3', title: 'Anyone checks in a second', text: 'Forward a message to the bot, use the site, or call the API. Revoke someone and every answer changes within seconds.' },
+]
 
 export default function Home() {
   return (
-    <div className="space-y-16">
-      <section className="grid items-start gap-8 lg:grid-cols-[1.1fr_1fr]">
-        <div className="space-y-5">
-          <p className="pill pill-info w-fit">ETHGlobal Tokyo 2026 · live on ENSv2 (Sepolia)</p>
-          <h1 className="text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-5xl">
-            Is this “recruiter” <span style={{ color: 'var(--accent)' }}>really</span> from that project?
-          </h1>
-          <p className="max-w-xl text-lg" style={{ color: 'var(--muted)' }}>
-            Fake recruiters are the #1 way crypto teams get hacked. Chasing fakes never ends. <b style={{ color: 'var(--ink)' }}>Kakunin certifies the real ones</b>: a
-            short, verifiable list that each project publishes on ENSv2.
+    <div className="space-y-28 pb-10">
+      {/* Hero: the promise, and the one memorable moment (the stamp) */}
+      <section className="grid items-center gap-12 pt-4 lg:grid-cols-[1.25fr_1fr] lg:gap-14">
+        <div className="space-y-7">
+          <h1 className="t-hero" style={{ fontSize: "clamp(2.6rem, 6.3vw, 5.4rem)" }}>Is this recruiter really from that project?</h1>
+          <p className="t-lead" style={{ color: 'var(--muted)' }}>
+            Fake recruiters are how crypto teams get hacked. Chasing fakes never ends, so Kakunin does the opposite: each project publishes the short list of people who are real, and anyone can check against it.
           </p>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/demo" className="btn btn-primary">Watch the live demo</Link>
-            <Link href="/org/kakunin-demo.eth" className="btn">Open the org dashboard</Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/demo" className="btn btn-primary !px-6 !py-3 !text-base">Watch it work</Link>
+            <a href="https://t.me/KakuninxyzBot/app" target="_blank" rel="noopener noreferrer" className="btn !px-6 !py-3 !text-base">Open in Telegram</a>
           </div>
-          <p className="text-sm" style={{ color: 'var(--muted)' }}>
-            Free for people. Paid, screened API for AI agents. <Link className="underline" href="/docs">See the API</Link>.
-          </p>
         </div>
-        <QuickCheck />
+        <HeroDesk />
       </section>
 
-      <section aria-labelledby="answers" className="space-y-4">
-        <h2 id="answers" className="text-2xl font-bold">Four answers, always with proof</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* The four answers, as the stamps themselves */}
+      <section aria-labelledby="answers" className="space-y-10">
+        <div className="max-w-2xl space-y-3">
+          <h2 id="answers" className="t-h2">Every answer is a stamp, and every stamp has a reason.</h2>
+          <p className="t-lead" style={{ color: 'var(--muted)' }}>The kanji says what happened. The text beside it says why, and what to do next.</p>
+        </div>
+        <div className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4" style={{ borderTop: '1px solid var(--line)', paddingTop: '2.5rem' }}>
           {ANSWERS.map((a) => (
-            <div key={a.name} className="card space-y-2 p-5">
-              <span className={`pill ${a.pill}`}><span aria-hidden>{a.emoji}</span> {a.name}</span>
-              <p className="text-sm" style={{ color: 'var(--muted)' }}>{a.text}</p>
+            <div key={a.status} className="space-y-4">
+              <Stamp status={a.status} size={104} />
+              <div>
+                <h3 className="text-xl font-bold tracking-tight">{a.name}</h3>
+                <p className="mt-1.5 text-[.95rem]" style={{ color: 'var(--muted)' }}>{a.text}</p>
+              </div>
             </div>
           ))}
         </div>
       </section>
 
-      <section aria-labelledby="how" className="space-y-4">
-        <h2 id="how" className="text-2xl font-bold">How it works</h2>
-        <ol className="grid gap-4 md:grid-cols-3">
+      {/* How it works: a true sequence, so numbered */}
+      <section aria-labelledby="how" className="space-y-10">
+        <h2 id="how" className="t-h2 max-w-2xl">Three steps, no wallet for the people being verified.</h2>
+        <ol className="grid gap-10 md:grid-cols-3">
           {STEPS.map((s) => (
-            <li key={s.n} className="card space-y-2 p-5">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white" style={{ background: 'var(--accent)' }} aria-hidden>{s.n}</span>
-              <h3 className="font-semibold">{s.title}</h3>
-              <p className="text-sm" style={{ color: 'var(--muted)' }}>{s.text}</p>
+            <li key={s.n} className="space-y-3 pt-5" style={{ borderTop: '2px solid var(--ink)' }}>
+              <span className="display block text-6xl font-extrabold leading-none tracking-tighter" style={{ color: 'var(--brand)' }} aria-hidden>{s.n}</span>
+              <h3 className="text-xl font-bold tracking-tight">{s.title}</h3>
+              <p className="text-[.95rem]" style={{ color: 'var(--muted)' }}>{s.text}</p>
             </li>
           ))}
         </ol>
       </section>
 
-      <section className="card grid gap-6 p-6 md:grid-cols-[1.2fr_1fr]" aria-labelledby="agents">
-        <div className="space-y-3">
-          <p className="pill pill-info w-fit">For AI agents</p>
-          <h2 id="agents" className="text-2xl font-bold">Agents pay per check, and never pay a scammer</h2>
-          <p className="text-sm" style={{ color: 'var(--muted)' }}>
-            The paid API speaks x402 (0.001 USDC per check). The buying agent screens the destination with the live Intercepta API <b style={{ color: 'var(--ink)' }}>before it signs</b>:
-            approved payments go through, flagged ones are refused, with the reason on screen.
+      {/* Agents: a receipt, because a payment decision is a record */}
+      <section aria-labelledby="agents" className="grid items-center gap-12 lg:grid-cols-2">
+        <div className="space-y-5">
+          <h2 id="agents" className="t-h2">Agents pay for checks, and never pay a scammer.</h2>
+          <p className="t-lead" style={{ color: 'var(--muted)' }}>
+            The check is also sold per call over x402, for 0.001 USDC. The buying agent screens the destination with a live risk API before it signs anything: clean addresses get paid, flagged ones are refused, and the reason is on the record.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Link href="/demo" className="btn">See it run</Link>
-            <Link href="/docs" className="btn">API docs</Link>
+            <Link href="/demo#agents" className="btn">See a payment refused</Link>
+            <Link href="/docs#agents" className="btn">Read the API</Link>
           </div>
         </div>
-        <ul className="space-y-2 self-center text-sm">
-          <li className="flex items-center justify-between gap-3 rounded-xl p-3" style={{ background: 'var(--ok-bg)', color: 'var(--ok)' }}><span>Kakunin paid API</span><b>✅ approved</b></li>
-          <li className="flex items-center justify-between gap-3 rounded-xl p-3" style={{ background: 'var(--bad-bg)', color: 'var(--bad)' }}><span>Fake clone (sanctioned payTo)</span><b>⛔ blocked</b></li>
-        </ul>
+        <div className="paper paper-lift mx-auto w-full max-w-md p-6 mono" style={{ fontSize: '.82rem', lineHeight: 1.7 }} role="img" aria-label="Two payment receipts: one approved, one refused">
+          <p className="display text-base font-bold" style={{ fontFamily: 'var(--font-display)' }}>Agent payment log</p>
+          <p style={{ color: 'var(--muted)' }}>screened before signing</p>
+          <hr className="my-3 border-dashed" style={{ borderColor: 'var(--line)' }} />
+          <p>payTo 0x9140…1044</p>
+          <p>risk score 0/100</p>
+          <p style={{ color: 'var(--ok)' }}><b>PAID</b> 0.001 USDC, check delivered</p>
+          <hr className="my-3 border-dashed" style={{ borderColor: 'var(--line)' }} />
+          <p>payTo 0x098B…2f96</p>
+          <p>risk score 100/100</p>
+          <p style={{ color: 'var(--bad)' }}>sanction_address, known_scammer</p>
+          <p style={{ color: 'var(--bad)' }}><b>REFUSED</b> nothing signed</p>
+        </div>
       </section>
 
-      <section aria-label="Built on" className="flex flex-wrap items-center justify-center gap-2 text-sm">
-        <span style={{ color: 'var(--muted)' }}>Built on</span>
-        {STACK.map((s) => <span key={s} className="pill pill-info">{s}</span>)}
+      {/* The Mini App, live */}
+      <section aria-labelledby="miniapp" className="grid items-center gap-12 lg:grid-cols-[1fr_auto]">
+        <div className="max-w-xl space-y-5">
+          <h2 id="miniapp" className="t-h2">It lives where the scam starts: inside Telegram.</h2>
+          <p className="t-lead" style={{ color: 'var(--muted)' }}>
+            Telegram tells Kakunin exactly who opened the app, so a member’s card can’t be requested by anyone else. Members carry a verified card, anyone can check a sender, and org admins revoke or invite from their phone.
+          </p>
+          <a href="https://t.me/KakuninxyzBot/app" target="_blank" rel="noopener noreferrer" className="btn btn-primary !px-6 !py-3 !text-base">Open the Mini App</a>
+          <p className="text-sm" style={{ color: 'var(--muted)' }}>The phone on the right is the real app, running on sample data.</p>
+        </div>
+        <div className="mx-auto" style={{ width: 340 }}>
+          <div className="overflow-hidden rounded-[2.4rem] p-2.5 paper-lift" style={{ background: 'var(--ink)' }}>
+            <iframe title="Kakunin Telegram Mini App preview" src="/tg?preview=member&tab=card&embed=1" loading="lazy" className="block w-full rounded-[1.9rem] border-0" style={{ height: 620, background: 'var(--bg)' }} />
+          </div>
+        </div>
+      </section>
+
+      {/* Close */}
+      <section className="space-y-6 pt-4" style={{ borderTop: '2px solid var(--ink)' }}>
+        <h2 className="t-hero !text-[clamp(2.4rem,6vw,5rem)] max-w-4xl pt-8">Stop guessing who is on the other end.</h2>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/check" className="btn btn-primary !px-6 !py-3 !text-base">Check someone now</Link>
+          <Link href="/org/kakunin-demo.eth" className="btn !px-6 !py-3 !text-base">See the team dashboard</Link>
+        </div>
       </section>
     </div>
   )

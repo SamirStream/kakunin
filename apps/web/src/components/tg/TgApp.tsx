@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ResultCard, type ApiResult } from '@/components/ResultCard'
 import { HankoMark } from '@/components/Logo'
+import { Stamp } from '@/components/Stamp'
 import { CopyButton } from '@/components/CopyButton'
 import { PREVIEW_ADMIN, PREVIEW_ME, type AdminData, type Me } from './fixtures'
 
@@ -40,6 +41,9 @@ export function TgApp() {
   const tgRef = useRef<WebApp | null>(null)
   const initRef = useRef('')
   const previewRole = useRef<'member' | 'admin' | 'guest'>('member')
+  // ?embed=1: shown inside a page (the landing's phone), so the preview notice would be noise.
+  const [embed, setEmbed] = useState(false)
+  useEffect(() => { setEmbed(new URLSearchParams(window.location.search).has('embed')) }, [])
 
   const say = useCallback((text: string, tone: 'ok' | 'bad' | 'info' = 'info') => {
     setToast({ text, tone })
@@ -126,12 +130,12 @@ export function TgApp() {
           <div className="mono truncate" style={{ color: 'var(--muted)' }}>kakunin-demo.eth</div>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          {mode === 'preview' && <span className="pill pill-warn">Preview</span>}
+          {mode === 'preview' && !embed && <span className="pill pill-warn">Preview</span>}
           {me?.admin && <span className="pill pill-info">Admin</span>}
         </div>
       </header>
 
-      {mode === 'preview' && (
+      {mode === 'preview' && !embed && (
         <div className="border-b px-4 py-2 text-xs" style={{ borderColor: 'var(--line)', background: 'var(--warn-bg)', color: 'var(--warn)' }}>
           Preview with sample data. Open <a className="font-semibold underline" href={`https://t.me/${BOT}`}>@{BOT}</a> in Telegram for the real thing.
           {' '}<a className="underline" href="?preview=member">member</a> · <a className="underline" href="?preview=admin">admin</a> · <a className="underline" href="?preview=guest">guest</a>
@@ -261,15 +265,15 @@ function CardTab({ me, call, tg, say, reload, inviteToken }: Common & { me: Me |
 
       {r.status === 'verified' && (
         <>
-          <div className="relative overflow-hidden rounded-3xl p-5 shadow-md" style={{ background: 'linear-gradient(140deg, var(--panel), var(--info-bg))', border: '1px solid var(--line)' }}>
-            <div className="pointer-events-none absolute -right-6 -top-6 opacity-[0.12]"><HankoMark size={170} /></div>
-            <div className="mb-4 flex items-center gap-2"><span className="pill pill-ok">✅ Verified member</span></div>
-            <div className="text-3xl font-extrabold tracking-tight">{r.member.label}</div>
-            <div className="mono break-all" style={{ color: 'var(--muted)' }}>{r.member.fqn}</div>
-            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-              <div><dt className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Role</dt><dd className="font-semibold">{r.member.role ?? '—'}</dd></div>
-              <div><dt className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Since</dt><dd className="font-semibold">{r.member.since ?? '—'}</dd></div>
-              <div className="col-span-2"><dt className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Attested by</dt><dd className="mono font-semibold">{r.org}</dd></div>
+          <div className="paper paper-lift relative overflow-hidden p-5">
+            <div className="absolute right-3 top-3"><Stamp status="verified" size={84} animate /></div>
+            <p className="text-sm font-semibold" style={{ color: 'var(--ok)' }}>Verified member</p>
+            <div className="display mt-3 pr-24 text-[2.4rem] font-extrabold leading-none tracking-tight">{r.member.label}</div>
+            <div className="mono mt-1 break-all pr-16" style={{ color: 'var(--muted)' }}>{r.member.fqn}</div>
+            <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-4 pt-4 text-sm" style={{ borderTop: '1px solid var(--line)' }}>
+              <div><dt className="text-xs" style={{ color: 'var(--muted)' }}>Role</dt><dd className="font-semibold">{r.member.role ?? '—'}</dd></div>
+              <div><dt className="text-xs" style={{ color: 'var(--muted)' }}>Since</dt><dd className="font-semibold">{r.member.since ?? '—'}</dd></div>
+              <div className="col-span-2"><dt className="text-xs" style={{ color: 'var(--muted)' }}>Signed by</dt><dd className="mono font-semibold">{r.org}</dd></div>
             </dl>
           </div>
           <div className="grid grid-cols-2 gap-2">

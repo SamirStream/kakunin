@@ -33,7 +33,7 @@ Three sides:
 
 ## Self-serve organisations: any project can join in two minutes
 
-Kakunin is not a single-org demo. [`/create`](https://kakunin.xyz/create) takes an ENS name and an owner wallet and, in about 2.5 minutes and 14 Sepolia transactions, builds the whole ENSv2 setup: `<name>.eth` registered **to the owner's wallet** (commit-reveal through the ETHRegistrar), an org `UserRegistry` and a team `UserRegistry` and two `PermissionedResolver`s through the `VerifiableFactory`, and a Kakunin **operator** key with least-privilege EAC roles that drops its setup rights on the org root at the end. Gas is sponsored on testnet.
+Kakunin is not a single-org demo. [`/create`](https://kakunin.xyz/create) takes an ENS name and an owner wallet and, in about 2.5 minutes and 12 Sepolia transactions, builds the whole ENSv2 setup: `<name>.eth` registered **to the owner's wallet** (commit-reveal through the ETHRegistrar), an org `UserRegistry` and a team `UserRegistry` and two `PermissionedResolver`s through the `VerifiableFactory`, and a Kakunin **operator** key with least-privilege EAC roles that drops its setup rights on the org root at the end. Gas is sponsored on testnet.
 
 - **The owner signs, the operator sends.** The dashboard signs in with the owner wallet (EIP-191, no gas); add / revoke / invite / Telegram-admin each need a fresh signature naming the exact target. The server then acts with the operator key.
 - **Per-organisation everything**: directory, alerts, admins, invites. The bot and the Mini App serve all organisations: a check looks the person up everywhere, `/check acme.eth @user` checks one, and an organisation is alerted only when someone imitates one of its members or is one of its former members.

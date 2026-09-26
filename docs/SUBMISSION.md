@@ -69,7 +69,7 @@ Samir Touinssi, CEO of The Arch (thearch.consulting). Solo.
 2. **Can a scammer forward a real member's link?** Yes, so the profile page says it proves the member exists, not who is writing. The proof is the numeric Telegram ID: the bot and Mini App compare it.
 3. **What if an @username changes?** The identity is the numeric ID; usernames are refreshed on every interaction and only used to find lookalikes.
 4. **What stops HR abusing power?** EAC: HR cannot change the root name, resolvers or subregistries; the dashboard reads the role bitmaps live. Revocations are public events.
-5. **How does a new project join?** Self-serve at kakunin.xyz/create: name plus owner wallet, about 2.5 minutes, 14 Sepolia transactions, gas sponsored on testnet. The name is registered to the owner's wallet, not to Kakunin, and the owner can remove the operator on-chain at any time.
+5. **How does a new project join?** Self-serve at kakunin.xyz/create: name plus owner wallet, about 2.5 minutes, 12 Sepolia transactions, gas sponsored on testnet. The name is registered to the owner's wallet, not to Kakunin, and the owner can remove the operator on-chain at any time.
 6. **Business model?** Free for people. Projects pay for alerts, analytics and managed onboarding. Agents pay per check over x402.
 7. **Is Telegram the only channel?** It is where the attack happens first. The attestation format is channel-agnostic (X and LinkedIn keys are the same mechanism).
 8. **Why testnet only?** ENSv2 is in beta on Sepolia; the design is chain-agnostic and mainnet-ready once ENSv2 ships.

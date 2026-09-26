@@ -4,6 +4,8 @@
 
 > Testnet only (Sepolia). No mainnet funds are ever used.
 
+**Live demo: <https://kakunin-phi.vercel.app>** · try [a lookalike](https://kakunin-phi.vercel.app/check?who=alice_kakunn), [the real Alice](https://kakunin-phi.vercel.app/check?who=100000001), the [scripted demo](https://kakunin-phi.vercel.app/demo?run=all) and the [org dashboard](https://kakunin-phi.vercel.app/org/kakunin-demo.eth). Telegram bot: [@KakuninxyzBot](https://t.me/KakuninxyzBot).
+
 ## The problem
 
 Impersonation is the #1 social-engineering vector in Web3. Scammers pose as recruiters or team members of real projects on Telegram, X and LinkedIn, then get victims to run malware or sign transactions. On 18 Sept 2026 Japan's National Police Agency, with the FBI and Australian/German agencies, published a joint advisory on **WaterPlum / "Contagious Interview"** (North Korea): 30,000+ devices infected in 100+ countries, 7,000+ wallets drained, about 1.7B JPY moved to the DPRK. Every infection started with a fake recruiter conversation.

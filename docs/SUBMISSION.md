@@ -5,7 +5,7 @@ Everything below is written to be pasted into the submission form. Facts were ch
 ## Links
 
 - Live: https://kakunin.xyz  ·  Telegram Mini App: https://t.me/KakuninxyzBot/app  ·  Bot: https://t.me/KakuninxyzBot
-- Repo: https://github.com/SamirStream/kakunin (public, MIT, 44 commits since 2026-09-26)
+- Repo: https://github.com/SamirStream/kakunin (public, MIT, full git history since the first commit)
 - API docs: https://kakunin.xyz/docs  ·  OpenAPI: https://kakunin.xyz/api/v1/openapi.json
 - Demo video: `[ADD LINK AFTER RECORDING]`
 

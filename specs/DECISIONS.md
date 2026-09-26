@@ -28,3 +28,14 @@
 - pnpm enforces `minimumReleaseAge` (supply-chain): versions published <24h ago are refused. Pinned dotenv 18.0.3 and vitest 5.0.1 for that reason. Do not bypass.
 - pnpm 12.6.0 is what `npm i -g pnpm` installs here; build scripts need `allowBuilds` in `pnpm-workspace.yaml` (esbuild only).
 - ENSv2 design for the demo: separate resolver for `team.<org>.eth` (HR gets only ROLE_SET_TEXT there, root resolver stays org-only); HR gets REGISTRAR|UNREGISTER|RENEW on the team registry ROOT only.
+
+## 2026-09-26 — Spike 2 (GramJS/MTProto) ABANDONED — username lookup via our own registry [BUILDER DECIDED]
+- No MTProto resolver, no throwaway Telegram account, no session string. Removes a fragile dependency and the `TG_API_ID/TG_API_HASH/TG_SESSION_STRING` env vars.
+- Onboarding (`/start <token>`) stores BOTH the immutable numeric Telegram user ID and the current @username (case-folded). Every later interaction with the bot refreshes the stored @username for that numeric ID (usernames are mutable; the ID is the identity).
+- A check by @username is answered from OUR registry (username -> numeric ID -> member subname -> attestation). A username not found in the registry is "Unknown"/"Lookalike", never resolved via Telegram.
+- Forwarded messages still use `forward_origin` (numeric ID when visible; if `hidden_user`, victim pastes the @username).
+- Consequence: a member who changed their @username and never talked to the bot since could be missed by username lookup until their next interaction; numeric-ID checks are unaffected. Accepted for the hackathon; demo members are refreshed at seed time.
+- Only the numeric ID is attested on-chain (`org.telegram.id`); the username is off-chain registry data.
+
+## 2026-09-26 — Clock
+- Builder is in Tokyo; machine clock is JST. Deadline Sun 2026-09-27 09:00 JST. At 11:55 JST Sat: ~21h left.

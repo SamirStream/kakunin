@@ -13,7 +13,9 @@
     "check": "pnpm --filter @kakunin/scripts check",
     "bot": "pnpm --filter @kakunin/bot dev",
     "web": "pnpm --filter @kakunin/web build && pnpm --filter @kakunin/web start",
-    "rehearse": "pnpm --filter @kakunin/scripts rehearse"
+    "rehearse": "pnpm --filter @kakunin/scripts rehearse",
+    "paid": "pnpm --filter @kakunin/paid-api server",
+    "agent": "pnpm --filter @kakunin/paid-api agent"
   },
   "devDependencies": {
     "typescript": "5.9.3"

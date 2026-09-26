@@ -10,8 +10,6 @@ import { wrapFetchWithPayment } from '@x402/fetch'
 import { decidePayment, type AddressScreener, type AddressVerdict, type Decision, type PaymentRequest, type Policy } from '@kakunin/core'
 import { getScreener } from './screener'
 
-config({ path: fileURLToPath(new URL('../../../.env', import.meta.url)), quiet: true })
-
 // Base Sepolia USDC, exactly as advertised by the x402 SDK (do not trust a token address just because a server sends it).
 export const BASE_SEPOLIA_USDC = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'
 export const POLICY: Policy = {
@@ -76,6 +74,7 @@ const show = (r: BuyResult) => {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  config({ path: fileURLToPath(new URL('../../../.env', import.meta.url)), quiet: true })
   const pk = process.env.AGENT_PRIVATE_KEY
   if (!pk || !/^0x[0-9a-fA-F]{64}$/.test(pk)) throw new Error('AGENT_PRIVATE_KEY missing in .env (run pnpm spike:wallets, then fund the agent with Base Sepolia USDC)')
   const buy = makeAgent({ signer: privateKeyToAccount(pk as `0x${string}`), screener: getScreener() })

@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import { ResultCard, type ApiResult } from '@/components/ResultCard'
+import { AgentPayments } from '@/components/AgentPayments'
 
 // Scripted demo (specs: 4 minutes). Every check is a REAL read of ENSv2 on Sepolia; nothing here is mocked.
 const SCENARIOS = [
@@ -74,6 +75,8 @@ export default function DemoPage() {
               {results[s.id] && <ResultCard result={results[s.id]} />}
             </div>
           ))}
+
+          <AgentPayments />
 
           <div className="card space-y-3 p-5">
             <div className="font-semibold">HR controls (server-side demo signer)</div>

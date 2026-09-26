@@ -69,7 +69,9 @@ Kakunin's check is also sold per call over **x402** (0.001 USDC, Base Sepolia). 
 | Decision policy: refuse lookalike tokens, spending limits, refuse high-risk `payTo`, ask a human on medium/unknown, **fail closed** if screening errors | [`packages/core/src/screening.ts`](packages/core/src/screening.ts) |
 | Paid API (seller) and a FAKE clone whose `payTo` is a flagged address | [`apps/paid-api/src/server.ts`](apps/paid-api/src/server.ts) |
 
-Real run on 2026-09-26 (`pnpm --filter @kakunin/paid-api server` then `agent`):
+![Agent payments: one approved, one blocked](docs/screenshots/agent-payments.png)
+
+Real run on 2026-09-26 (`pnpm paid` then `pnpm agent`, or the **Run agent purchases** button on `/demo`):
 
 ```
 === http://localhost:4021/check?telegramId=100000001          (real Kakunin API)

@@ -7,6 +7,7 @@ Everything below is REAL: every check reads ENSv2 on Sepolia; nothing is mocked.
 ```bash
 pnpm seed                      # idempotent: attester address, alice + bob + attestations, bot directory
 pnpm bot                       # Telegram bot @KakuninxyzBot (needs TELEGRAM_BOT_TOKEN in .env)
+pnpm paid                      # x402 paid API :4021 + fake clone :4022 (needs INTERCEPTA_API_KEY, AGENT_PRIVATE_KEY funded with Base Sepolia USDC)
 pnpm web                       # http://localhost:3000  (KAKUNIN_DEMO_SIGNER=1 in .env enables the demo buttons)
 ```
 
@@ -21,7 +22,7 @@ Screens: `/demo` (main), `/org/kakunin-demo.eth` (dashboard), Telegram on the ph
 | 1:15 | The real Alice is on the team registry, attested by the org's own ENS name. | Scenario 3 → ✅ **Verified**, show the signer = org address. On the phone: forward a message to the bot, same answer. |
 | 1:45 | **WOW.** HR revokes Bob live. HR is a *separate wallet* that can only manage the team registry. | Scenario 4 (Bob is ✅) → click **HR: revoke Bob** (about 4 s on-chain) → run scenario 4 again → 🕓 **Former member**, revocation date read from ENSv2 events. |
 | 2:30 | **Under the hood.** Hierarchical ENSv2 registries, Enhanced Access Control (HR cannot touch the root name), per-account permissioned resolver, Universal Resolver V2, registry events for history, and the draft ENSIP "Text Record Attestations". | `/org/kakunin-demo.eth` → **HR delegation** panel: HR allowed on the team registry, denied on the org root. Show the architecture diagram from the README. |
-| 3:15 | (only if Intercepta is done) An AI agent pays per check via x402; Intercepta screens `payTo` and blocks a fake clone. | — |
+| 3:15 | **Agents pay for the check.** An AI agent buys Kakunin checks over x402. Before it signs, it screens the destination with the live Intercepta API. | `/demo` section 5 → **Run agent purchases** (about 4 s): ✅ payment approved (screened low, paid 0.001 USDC, got the verdict) and ⛔ the fake clone blocked before signing, with Intercepta's reasons (sanction_address, known_scammer). |
 | 3:40 | **Vision.** Free for users, paid alerts for projects, native Telegram badges later (Telegram third-party verification). | Landing page |
 
 ## Q&A cheat sheet

@@ -2,7 +2,7 @@
 //   - src/index.ts          : long polling, for local development (`pnpm bot`)
 //   - apps/web /api/telegram : webhook, for the cloud deployment (serverless, no long-running process)
 // Everything here is stateless between updates except an in-memory rate limiter; persistent state lives in the Store.
-import { Bot } from 'grammy'
+import { Bot, InlineKeyboard, Keyboard } from 'grammy'
 import { createWalletClient, http, type Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { sepolia } from 'viem/chains'
@@ -76,10 +76,26 @@ export function createBot(cfg: BotConfig): { bot: Bot; deps: Deps } {
     await next()
   })
 
+  // The Mini App (same engine, richer screens). Buttons open it inside Telegram, with the user's signed identity.
+  const appUrl = `${(process.env.PUBLIC_URL || 'https://kakunin.xyz').replace(/\/$/, '')}/tg`
+  const openApp = new InlineKeyboard().webApp('Open Kakunin', appUrl)
+  // Telegram's own contact picker: the bot receives the chosen account's real numeric ID, even if that person hides forwards.
+  const pick = new Keyboard().requestUsers('Pick a person to check', 1, { user_is_bot: false, request_username: true, request_name: true }).oneTime().resized()
+
   bot.command('start', async (ctx) => {
-    await ctx.reply(await handleStart(deps, ctx.from!, ctx.match.trim()))
+    const payload = ctx.match.trim()
+    if (payload === 'pick') return ctx.reply('Tap the button, choose the person from your chats, and I will check them.', { reply_markup: pick })
+    await ctx.reply(await handleStart(deps, ctx.from!, payload), { reply_markup: openApp })
   })
-  bot.command('help', (ctx) => ctx.reply(WELCOME))
+  bot.command('app', (ctx) => ctx.reply('Your verified card, quick checks and the team console, in one place:', { reply_markup: openApp }))
+  bot.command('pick', (ctx) => ctx.reply('Tap the button, choose the person from your chats, and I will check them.', { reply_markup: pick }))
+  bot.on('message:users_shared', async (ctx) => {
+    for (const u of ctx.message.users_shared.users) {
+      const subject = { telegramId: String(u.user_id), username: u.username, displayName: [u.first_name, u.last_name].filter(Boolean).join(' ') || undefined }
+      await ctx.reply((await handleCheck(deps, subject)).text, { reply_markup: { remove_keyboard: true } })
+    }
+  })
+  bot.command('help', (ctx) => ctx.reply(WELCOME, { reply_markup: openApp }))
   bot.command('check', async (ctx) => {
     const arg = ctx.match.trim()
     if (!arg) {

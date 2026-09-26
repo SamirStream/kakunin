@@ -14,6 +14,8 @@ Scope: whole repo, reviewed by the AI assistant under the builder's direction, p
 
 | 6 | Cloud mode adds public attack surface: a Telegram webhook, server-side demo actions and the agent demo on a public host. | Medium | **Mitigated.** Webhook requires the secret header (`TELEGRAM_WEBHOOK_SECRET`); revoke/reset need `KAKUNIN_DEMO_SIGNER=1` plus a constant-time-compared admin token (proxied "localhost" requests get no free pass); the public agent demo is rate limited (3 / 10 min per client, 150 / day); single-use invites are consumed atomically (`GETDEL`). Unit-tested in `packages/core/test/access.test.ts`. |
 
+| 7 | Telegram Mini App: a page inside Telegram could try to claim another user's identity or call admin actions. | High if unauthenticated | **Mitigated.** Every `/api/tg/*` call must carry Telegram's signed `initData`; the HMAC-SHA256 signature is verified with the bot token (constant-time), replay window 24 h, future-dated data refused. Admin routes additionally require the caller's Telegram ID to be an org admin (ran `/subscribe`). The ID attested at onboarding is the signed one, never a page-supplied value. Per-user rate limit (60/min). Tested: forged user ID, wrong bot token, swapped/missing hash, expired data (`packages/core/test/telegram.test.ts`) and live against the running API. |
+
 ## Design properties worth keeping
 
 - **Fail closed everywhere**: screening errors never auto-pay (`ask-human`); an attestation that does not verify never yields "verified"; unknown/failed inputs yield "unknown".
@@ -28,5 +30,6 @@ Scope: whole repo, reviewed by the AI assistant under the builder's direction, p
 - Lookalike detection is heuristic (NFKC, confusables map, Levenshtein): it can miss creative spoofs and can flag unrelated short names (mitigated by stricter thresholds for short strings).
 - Intercepta quick-scan covers EOAs only; contract payees are treated as "unknown" and need a human.
 - Rate limiters are in-memory (per process/instance); on serverless the daily agent cap is per instance.
+- The Mini App admin console signs HR actions server-side with the throwaway HR key (a custodial-HR design for Telegram-first orgs); authorization is the admin Telegram ID, not a wallet.
 - In the cloud the throwaway testnet keys live in the Vercel environment (readable by project members).
 - The Intercepta sandbox key was shared in a chat session by the builder; it is a free 1,000-request key kept only in `.env`, rotate it if in doubt.

@@ -16,7 +16,23 @@ const api = (method: string, body?: object) =>
 
 const [cmd = 'info', base = process.env.PUBLIC_URL ?? 'https://kakunin.xyz'] = process.argv.slice(2)
 
-if (cmd === 'set') {
+if (cmd === 'menu') {
+  // Bot profile for the Mini App: the menu button (bottom-left of the chat) opens it, plus commands and a clear description.
+  const url = `${base.replace(/\/$/, '')}/tg`
+  const steps: [string, object][] = [
+    ['setChatMenuButton', { menu_button: { type: 'web_app', text: 'Kakunin', web_app: { url } } }],
+    ['setMyCommands', { commands: [
+      { command: 'app', description: 'Open Kakunin: your card, checks, team' },
+      { command: 'check', description: 'Check a @username or Telegram ID' },
+      { command: 'pick', description: 'Pick a contact from your chats and check them' },
+      { command: 'help', description: 'What Kakunin does' },
+    ] }],
+    ['setMyShortDescription', { short_description: 'Is this recruiter really from that project? Verify people against their ENS team registry.' }],
+    ['setMyDescription', { description: 'Kakunin (確認) tells you whether someone really belongs to a Web3 project. Forward a suspicious message, pick a contact, or open the app. Answers come from ENSv2 team registries, with proof.' }],
+  ]
+  for (const [method, body] of steps) console.log(method.padEnd(24), (await api(method, body)).ok ? 'ok' : 'FAILED')
+  console.log(`Mini App url: ${url}`)
+} else if (cmd === 'set') {
   // The webhook secret must be the SAME value in .env and in the Vercel environment (TELEGRAM_WEBHOOK_SECRET).
   let secret = process.env.TELEGRAM_WEBHOOK_SECRET
   if (!secret) {

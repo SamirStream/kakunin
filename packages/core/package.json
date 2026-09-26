@@ -21,6 +21,7 @@
     "./messages": "./src/messages.ts",
     "./ens": "./src/ens.ts",
     "./auth": "./src/auth.ts",
-    "./access": "./src/access.ts"
+    "./access": "./src/access.ts",
+    "./telegram": "./src/telegram.ts"
   }
 }

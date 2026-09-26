@@ -38,6 +38,20 @@ Three sides:
 - **Live badge** `![Kakunin](https://kakunin.xyz/api/badge/alice)` (SVG, refreshed every minute).
 - **Brand**: the hanko seal (red seal, kanji 確) on a paper/ink/vermilion palette; sources in [`docs/brand/`](docs/brand/).
 
+## Telegram Mini App
+
+Kakunin also lives **inside Telegram**, where the attacks happen: open [@KakuninxyzBot](https://t.me/KakuninxyzBot), tap the **Kakunin** menu button (or send `/app`). A browser preview with sample data is at [kakunin.xyz/tg](https://kakunin.xyz/tg).
+
+![Kakunin Telegram Mini App](docs/screenshots/miniapp.png)
+
+| Screen | What it does |
+|---|---|
+| **Check** | Paste a @username or numeric ID and get the four verdicts with proof; recent checks; **Pick a contact** hands over to the bot's native contact picker (`request_users`), which returns the real numeric ID even for people who hide forwards. |
+| **My card** | The member's verified ID card (name, role, since, attested by), **Share my proof** through Telegram, and the on-chain proof. It states plainly that a link alone proves nothing about who is writing to you. Invitations are claimed here too (progress steps while the two on-chain writes happen). |
+| **Team** (org admins only) | Live stats, impersonation alerts, the team from ENSv2, **Revoke** (native confirm dialog and haptics; signed by the HR wallet on the server, about 20 s on-chain), **Invite link** and **Add a member** (registers on-chain, then shares a one-time link through Telegram). |
+
+Why a Mini App changes the security model: Telegram signs `initData` with a key derived from the bot token, and the server verifies that signature on **every** request ([`packages/core/src/telegram.ts`](packages/core/src/telegram.ts), 7 tests including a forged user ID). So the account opening the app is authenticated: "My card" cannot be requested for someone else, the ID that gets attested at onboarding is the one Telegram signed, and admin actions are limited to the accounts that ran `/subscribe`. API routes: [`apps/web/src/app/api/tg/`](apps/web/src/app/api/tg/); UI: [`apps/web/src/components/tg/TgApp.tsx`](apps/web/src/components/tg/TgApp.tsx).
+
 ## Screenshots
 
 Live against the Sepolia deployment at [kakunin.xyz](https://kakunin.xyz) (dark theme shown; the UI follows the system theme and is mobile-friendly).
@@ -151,7 +165,7 @@ Requirements: Node 22, pnpm.
 pnpm install
 cp .env.example .env            # then: pnpm spike:wallets  (generates throwaway testnet keys into .env)
 # fund the printed ORG and HR addresses with Sepolia ETH (faucet)
-pnpm test                       # 93 tests
+pnpm test                       # 100 tests
 pnpm rehearse                   # replays the whole demo against the live chain, with assertions
 pnpm --filter @kakunin/scripts seed      # idempotent: attester address, members, attestations (add --dry-run to preview)
 pnpm --filter @kakunin/web build && pnpm --filter @kakunin/web start   # http://localhost:3000

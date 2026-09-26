@@ -105,3 +105,9 @@
 - **x402 in the app**: seller routes `/api/paid/real` and `/api/paid/clone` (`@x402/next` `withX402`), so the agent self-fetches its own origin: no separate process, works on Vercel. The standalone Express `apps/paid-api` server stays as a reference.
 - **Access control**: revoke/reset need `KAKUNIN_DEMO_SIGNER=1` and either plain localhost or `x-demo-token` (constant-time); agent demo is optionally public (`KAKUNIN_AGENT_PUBLIC=1`) and rate limited. `/api/health` reports what is configured (booleans only); `pnpm cloud:check` verifies a deployment end to end; `pnpm vercel:env` builds the import file for Vercel.
 - Verified locally (agent through the in-app sellers: paid + blocked in 4 s; token gating; rate limit). Cloud verification needs the Vercel env + Upstash steps in docs/CLOUD.md.
+
+## 2026-09-26 — Cloud mode live (set up with the Vercel CLI)
+- Vercel CLI (device login by the builder): linked project `kakunin` (root `apps/web`), wrote the 12 variables to production (secrets stored as sensitive, values never printed), installed **Upstash for Redis** (`kakunin-store`, terms accepted by the builder in the browser), redeployed, migrated the local Telegram directory (3 entries) and the `/subscribe` admin chat to Upstash, stopped the local polling bot and set the Telegram webhook to `https://kakunin-phi.vercel.app/api/telegram` (secret header: 401 without it).
+- `pnpm cloud:check https://kakunin-phi.vercel.app --agent`: **all checks passed** (Upstash store, webhook, demo-signer token gating, live ENSv2 checks, x402 seller, agent approved + blocked with live Intercepta).
+- The Upstash install dropped third-party AI-agent skill files (`.agents/`, `.claude/skills`, `skills-lock.json`) into the working tree; not followed, not committed, deleted, and now gitignored.
+- `kakunin.xyz` is attached to the project but its DNS is not configured at the registrar; the public URL to use is `https://kakunin-phi.vercel.app`.

@@ -31,6 +31,15 @@ Three sides:
 - **Member:** HR adds them, the app produces a one-time Telegram deep link, the member opens it from their own account; the bot captures the **numeric Telegram user ID** (never the mutable @username as identity) and the org attests it on ENS. No wallet needed for members.
 - **Victim (free, public):** forward a suspicious message to the bot, or use the `/check` web page.
 
+## Self-serve organisations: any project can join in two minutes
+
+Kakunin is not a single-org demo. [`/create`](https://kakunin.xyz/create) takes an ENS name and an owner wallet and, in about 2.5 minutes and 14 Sepolia transactions, builds the whole ENSv2 setup: `<name>.eth` registered **to the owner's wallet** (commit-reveal through the ETHRegistrar), an org `UserRegistry` and a team `UserRegistry` and two `PermissionedResolver`s through the `VerifiableFactory`, and a Kakunin **operator** key with least-privilege EAC roles that drops its setup rights on the org root at the end. Gas is sponsored on testnet.
+
+- **The owner signs, the operator sends.** The dashboard signs in with the owner wallet (EIP-191, no gas); add / revoke / invite / Telegram-admin each need a fresh signature naming the exact target. The server then acts with the operator key.
+- **Per-organisation everything**: directory, alerts, admins, invites. The bot and the Mini App serve all organisations: a check looks the person up everywhere, `/check acme.eth @user` checks one, and an organisation is alerted only when someone imitates one of its members or is one of its former members.
+- **Telegram admin link** from the dashboard makes an account the recipient of alerts and unlocks the Mini App team console for that organisation.
+- Provisioning is a resumable state machine (`packages/core/src/provision.ts`); `pnpm provision <label> <owner>` runs it from the CLI, and `scripts/e2e-http.ts` tests the full flow against a live deployment (create, add, onboard through Telegram initData, verify, alert, revoke).
+
 ## Public API, verifiable profiles and badges
 
 - **API v1** (no key, CORS open, 60 req/min): [`/api/v1/check?telegramId=100000001`](https://kakunin.xyz/api/v1/check?telegramId=100000001) returns one of four verdicts plus, for verified members, a **proof** (registry, resolver, signed envelope, attester) that anyone can re-check without trusting Kakunin. [`/api/v1/org/kakunin-demo.eth`](https://kakunin.xyz/api/v1/org/kakunin-demo.eth) lists the published team (no Telegram IDs). OpenAPI 3.1: [`/api/v1/openapi.json`](https://kakunin.xyz/api/v1/openapi.json). Docs and a 10-line verification snippet: [kakunin.xyz/docs](https://kakunin.xyz/docs).

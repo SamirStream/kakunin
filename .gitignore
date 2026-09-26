@@ -23,3 +23,4 @@ apps/web/next-env.d.ts
 .agents/
 .claude/skills/
 skills-lock.json
+.env.prod

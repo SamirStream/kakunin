@@ -130,3 +130,15 @@
 - **Type**: Bricolage Grotesque (headlines), Geist (text), Geist Mono (IDs), Noto Serif JP (seals only). **Surfaces**: washi paper with a faint fibre grain, ink (sumi) dark theme, ink-roughening SVG filter on stamps.
 - **Hero is real**: the first stamp is scripted, then any handle gets a live ENSv2 verdict on the same document. Landing also embeds the real Mini App (sample data) and shows the agent payment log as a receipt.
 - Shared components (ResultCard, Stamp) carry the language everywhere: home, check, profile, demo, dashboard, Mini App (the member card is now a sealed ID). The URL parameter theme=light or theme=dark overrides the theme for a visit.
+
+## 2026-09-27 — From demo to product: self-serve multi-organisation (decided by the builder: "un produit fini, pas une demo")
+
+- **Ownership model**: the ENS name is registered to the owner's wallet; a fresh operator key (sealed with AES-256-GCM, `KAKUNIN_KEY_SECRET`) is the attester (addr(60) of the org name) and the delegated HR. Operator roles: team registry REGISTRAR|UNREGISTER|RENEW, team resolver SET_TEXT, org resolver SET_ADDRESS; REGISTRAR (+admin) on the org registry only during setup, then self-revoked (spike: self-revoke needs the admin bit, plain REGISTRAR reverts; with the admin bit it works, confirmed on chain: kk-e2e-02).
+- **Provisioning cost/time on Sepolia**: about 0.0015 ETH and 140-155 s (the registrar's 60 s commit delay dominates). 14 transactions in 7 tasks; independent transactions of a batch are sent with explicit consecutive nonces and their hashes saved before waiting, so a retry never double-sends. Sponsor funds 0.004 ETH per operator; floor 0.015 ETH, cap 30 organisations, 3 creations per hour per client.
+- **Store**: per-org scopes; the reference org keeps the old Redis keys (no migration). Reverse indexes (`memberof`, `adminof`) make the per-message identity refresh O(1).
+- **Auth**: wallet signatures over `Kakunin <action>
+org
+target
+issued` (5 min per action, 1 h for a read-only session). No cookies, no server sessions.
+- **Bot semantics**: unnamed checks look in every org; alerts go to an org only if the person is its former member or a lookalike of its members (unknown people would otherwise spam every org).
+- **Verified on the cloud**: `scripts/create-org-http.ts` created an organisation through the public API on kakunin.xyz in 155 s, and `scripts/e2e-http.ts` passed 24/24 against it (including a real attestation written from a signed Telegram initData in 33 s).

@@ -78,6 +78,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a className="underline" href="https://t.me/KakuninxyzBot/app" target="_blank" rel="noopener noreferrer">Telegram Mini App</a>
               <Link className="underline" href="/create">Create an organisation</Link>
               <Link className="underline" href="/docs">API</Link>
+              <Link className="underline" href="/status">Status</Link>
+              <Link className="underline" href="/privacy">Privacy</Link>
+              <Link className="underline" href="/terms">Terms</Link>
               <a className="underline" href="https://github.com/SamirStream/kakunin" target="_blank" rel="noopener noreferrer">Source</a>
             </nav>
           </div>

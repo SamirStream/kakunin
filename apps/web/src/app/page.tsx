@@ -67,6 +67,20 @@ export default function Home() {
         </ol>
       </section>
 
+      {/* For projects: self-serve */}
+      <section aria-labelledby="projects" className="grid items-start gap-10 lg:grid-cols-[1fr_1.1fr]">
+        <div className="space-y-5">
+          <h2 id="projects" className="t-h2">Your project can be on it in two minutes.</h2>
+          <p className="t-lead" style={{ color: 'var(--muted)' }}>Pick a name, give the wallet that owns it, and Kakunin builds the ENSv2 registries for you. Gas is sponsored on testnet, and you keep the name.</p>
+          <div className="flex flex-wrap gap-3"><Link href="/create" className="btn btn-primary !px-6 !py-3 !text-base">Create your organisation</Link><Link href="/orgs" className="btn !px-6 !py-3 !text-base">Projects on Kakunin</Link></div>
+        </div>
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {[['You own the name', 'The .eth name is registered to your wallet, not to Kakunin.'], ['A limited operator', 'Adds and revokes members and signs attestations, with roles on the team registry only. Remove it on-chain any time.'], ['No gas for admins', 'You sign in with your wallet; the operator sends the transactions.'], ['Alerts on Telegram', 'Know when someone checks a lookalike of your team.']].map(([t, d]) => (
+            <li key={t} className="card p-4"><h3 className="font-bold">{t}</h3><p className="mt-1 text-sm" style={{ color: 'var(--muted)' }}>{d}</p></li>
+          ))}
+        </ul>
+      </section>
+
       {/* Agents: a receipt, because a payment decision is a record */}
       <section aria-labelledby="agents" className="grid items-center gap-12 lg:grid-cols-2">
         <div className="space-y-5">

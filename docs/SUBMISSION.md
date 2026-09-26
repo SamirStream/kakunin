@@ -25,7 +25,7 @@ Projects publish their team on ENSv2. Anyone, including AI agents, checks in one
 
 Fake recruiters are how crypto teams get hacked: someone poses as a project member on Telegram, X or LinkedIn and gets a developer to run malware or sign a transaction. Takedown tools chase an endless list of fakes. Kakunin certifies the real ones instead, a short list each project publishes on ENSv2.
 
-**Project side.** A project owns an ENS name (`kakunin-demo.eth`) with its own team registry (`team.kakunin-demo.eth`, an ENSv2 UserRegistry). Every member is a subname. An HR wallet manages the team through ENSv2 Enhanced Access Control (it can register, revoke and edit member records, and cannot touch the project's root name, resolvers or subregistry pointers). The project's own ENS name is the attester.
+**Project side, self-serve.** Any project creates its organisation at kakunin.xyz/create in about two minutes: it picks an ENS name and the wallet that will own it, and Kakunin registers `<name>.eth` to that wallet through the ENS registrar, deploys its org and team registries (ENSv2 `UserRegistry` proxies) and resolvers, and gives a limited operator key just enough Enhanced Access Control roles to run the team. The owner signs in with a wallet signature (no gas) to add and revoke members, connect Telegram alerts and see private alerts. A sample organisation (`kakunin-demo.eth`) is there to explore. Each organisation has a team registry (`team.<name>.eth`). Every member is a subname. An HR wallet manages the team through ENSv2 Enhanced Access Control (it can register, revoke and edit member records, and cannot touch the project's root name, resolvers or subregistry pointers). The project's own ENS name is the attester.
 
 **Member side.** HR sends a one-time Telegram link (or QR). The member opens it from their own account, and the numeric Telegram ID (never the mutable @username) is attested on ENS. No wallet needed.
 
@@ -37,6 +37,7 @@ Fake recruiters are how crypto teams get hacked: someone poses as a project memb
 
 - **ENSv2 (Sepolia), central to the product.** `kakunin-demo.eth` registered through the ETHRegistrar (commit-reveal, MockUSDC). Org and team registries are `UserRegistry` proxies deployed through the `VerifiableFactory`. HR gets `ROLE_REGISTRAR | ROLE_UNREGISTER | ROLE_RENEW` on the team registry root and `ROLE_SET_TEXT` on a separate team `PermissionedResolver` only; the dashboard reads the role bitmaps live to prove what HR cannot do. Reads go through `UniversalResolverV2`. An unregistered name leaves registry state, so "former member since …" is rebuilt from `LabelRegistered` / `LabelUnregistered` events and block timestamps.
 - **Attestations.** Implemented from the draft ENSIP "Text Record Attestations" (PR #85): DAG-CBOR payload, EIP-191 over keccak256, envelope `Tag(0x61747374)`, stored as `attestations[org.telegram.id][kakunin-demo.eth]`. The verifier also accepts the deployed atst.me layout; a test reproduces a real mainnet attestation byte for byte. Any change to the record, the owner or the attester key invalidates it.
+- **Multi-organisation.** Per-organisation directory, alerts, admins and invites; a shared org resolver used by the web app and the bot; provisioning is a resumable 7-task state machine (`packages/core/src/provision.ts`) advanced by the browser one bounded step at a time (fits serverless limits, hashes saved before waiting so retries never double-send). Operator keys are sealed with AES-256-GCM. Verified live on kakunin.xyz: an organisation created through the public API in 155 s, then 24 end-to-end checks (`scripts/e2e-http.ts`) including a real attestation written from a signed Telegram initData.
 - **Telegram.** grammY bot (cloud webhook), and a Mini App whose server validates Telegram's signed `initData` (HMAC-SHA256, replay window) on every request, so the account opening the app is authenticated. Admin actions are limited to accounts that ran `/subscribe`.
 - **x402 + Intercepta.** `@x402/next` seller (real endpoint and a fake clone whose `payTo` is flagged), `@x402/fetch` buyer with an `onBeforePaymentCreation` hook calling the live Intercepta quick-scan API; policy refuses lookalike tokens, enforces limits and fails closed.
 - **Stack.** TypeScript monorepo (pnpm), viem, Next.js 15 on Vercel, Upstash Redis, 100 unit tests, a security review with live attack tests (`docs/SECURITY.md`), and a one-command production check (`pnpm cloud:check`).
@@ -68,11 +69,11 @@ Samir Touinssi, CEO of The Arch (thearch.consulting). Solo.
 2. **Can a scammer forward a real member's link?** Yes, so the profile page says it proves the member exists, not who is writing. The proof is the numeric Telegram ID: the bot and Mini App compare it.
 3. **What if an @username changes?** The identity is the numeric ID; usernames are refreshed on every interaction and only used to find lookalikes.
 4. **What stops HR abusing power?** EAC: HR cannot change the root name, resolvers or subregistries; the dashboard reads the role bitmaps live. Revocations are public events.
-5. **How does a new project join?** Today a script provisions the ENS name, the two registries and the HR grant (`scripts/spike-ens.ts` is the reference flow); a self-serve creation flow is the next milestone, and the check side already works for any registry.
+5. **How does a new project join?** Self-serve at kakunin.xyz/create: name plus owner wallet, about 2.5 minutes, 14 Sepolia transactions, gas sponsored on testnet. The name is registered to the owner's wallet, not to Kakunin, and the owner can remove the operator on-chain at any time.
 6. **Business model?** Free for people. Projects pay for alerts, analytics and managed onboarding. Agents pay per check over x402.
 7. **Is Telegram the only channel?** It is where the attack happens first. The attestation format is channel-agnostic (X and LinkedIn keys are the same mechanism).
 8. **Why testnet only?** ENSv2 is in beta on Sepolia; the design is chain-agnostic and mainnet-ready once ENSv2 ships.
-9. **What is real and what is sample data?** Registries, roles, records, attestations, verdicts and payments are real on Sepolia. Two demo members use placeholder Telegram IDs; the builder's own account is a real onboarded member.
+9. **What is real and what is sample data?** Registries, roles, records, attestations, verdicts and payments are real on Sepolia, and organisations created on the site are real registries. Only the two sample members of `kakunin-demo.eth` use placeholder Telegram IDs; a judge can create their own organisation and onboard their own Telegram account live.
 10. **Did AI write it?** Mostly, under direction, and we say so: see the section above and `specs/`.
 
 ## Demo video storyboard (2 to 4 minutes, 720p or more, edit out waiting)
@@ -87,7 +88,7 @@ Samir Touinssi, CEO of The Arch (thearch.consulting). Solo.
 | 2:50 | Demo section 5: agent pays the real API, refuses the clone with Intercepta's reasons | "Agents pay per check over x402, and never pay a scammer." |
 | 3:30 | Repo, README, `pnpm cloud:check` all green | "Open source, tested, and running live." |
 
-Word-for-word narration: `docs/VIDEO_SCRIPT.md`.
+Word-for-word narration: `docs/VIDEO_SCRIPT.md` (about 3:45; includes creating a real organisation live).
 
 Recording checklist: 1280x720 or larger, no waiting (cut it), show the live URL in the address bar, keep the cursor calm, no secrets on screen (the `.env` file, the admin token field, the Vercel dashboard).
 

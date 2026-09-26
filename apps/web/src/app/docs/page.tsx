@@ -121,7 +121,7 @@ const signer = await recoverAddress({ hash: hashMessage({ raw: keccak256(payload
       <H2 id="bot">Telegram bot</H2>
       <p className="text-sm">
         <a className="underline" href="https://t.me/KakuninxyzBot" target="_blank" rel="noopener noreferrer">@KakuninxyzBot</a>: forward a suspicious message (or send an @username or numeric ID) and it answers with the same four verdicts.
-        Members onboard through a one-time link from their org’s HR; org admins send <span className="mono">/subscribe &lt;secret&gt;</span> to receive impersonation alerts.
+        Members onboard through a one-time link from their organisation; admins connect Telegram from the dashboard to receive impersonation alerts. Without a project name the bot looks the person up in every organisation; <span className="mono">/check acme.eth @user</span> checks one.
       </p>
     </div>
   )

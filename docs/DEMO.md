@@ -36,6 +36,10 @@ Screens: `/` (hook), `/demo` (main), `/org/kakunin-demo.eth` (dashboard), Telegr
 | 3:15 | **Agents pay for the check.** An AI agent buys Kakunin checks over x402. Before it signs, it screens the destination with the live Intercepta API. | `/demo` section 5 → **Run agent purchases** (about 4 s): ✅ payment approved (screened low, paid 0.001 USDC, got the verdict) and ⛔ the fake clone blocked before signing, with Intercepta's reasons (sanction_address, known_scammer). |
 | 3:45 | **Vision.** Free for users, paid alerts for projects, native Telegram badges later (Telegram third-party verification). | Landing page |
 
+## Product beat (add 60 s if you have the time): create a real organisation live
+
+Open https://kakunin.xyz/create, type a free name, click **Use my browser wallet**, **Create**. While the checklist runs (about 2.5 minutes, the ENS registrar's one-minute commit delay is on the clock), talk through the ENSv2 pieces it is deploying. When it finishes: **Open your dashboard** → **Sign in with wallet** → **Add member** → show the **Delegation** panel (operator: allowed on the team registry, denied on the org root). Then **Connect Telegram alerts** and open the link on the phone. Nothing here is scripted: the judge can pick the name.
+
 ## Q&A cheat sheet
 
 - **Why numeric Telegram ID?** Usernames are mutable; the ID is the identity. The bot refreshes the @username on every interaction.

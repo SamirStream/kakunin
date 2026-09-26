@@ -16,6 +16,7 @@
     "seed": "tsx seed-demo.ts",
     "check": "tsx check.ts",
     "add-member": "tsx add-member.ts",
-    "revoke-member": "tsx revoke-member.ts"
+    "revoke-member": "tsx revoke-member.ts",
+    "rehearse": "tsx rehearse.ts"
   }
 }

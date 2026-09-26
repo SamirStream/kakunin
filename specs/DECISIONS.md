@@ -14,3 +14,17 @@
 - Subregistry: deploy UserRegistry proxy via VerifiableFactory (emits ProxyDeployed), then ETHRegistry.setSubregistry(labelhash, proxy). initialize roleBitmap must include ROLE_REGISTRAR_ADMIN + ROLE_RENEW_ADMIN.
 - Roles: REGISTRAR 1<<0, UNREGISTER 1<<12, RENEW 1<<16, SET_SUBREGISTRY 1<<20, SET_RESOLVER 1<<24; admin = role<<128. Resolver: SET_TEXT 1<<4.
 - Events: LabelRegistered, LabelUnregistered (history for "former member").
+
+## 2026-09-26 — M0 spike 3: attestation format (RESULT: OK, compatible with atst.me)
+- Source: draft ENSIP PR #85 (ensips/xx.md). Payload = DAG-CBOR map, signature = EIP-191 over keccak256(payload), envelope = CBOR `Tag(0x61747374)[version, t, sig(65)]`, published as text record `attestations[RECORD_KEY][ATTESTER_NAME]` (base64 or 0x-hex). Consumer rebuilds `n,a,k,v` from live ENS data, so owner/record/attester-key changes auto-invalidate.
+- **Discrepancy found**: the deployed playground (atst.me, `/api/verify`) uses envelope **v2** with payload keys `{n,a,p,h,t}` (`p`=platform, `h`=handle; `a` = 20 raw bytes), whereas the PR text says envelope **v1** with `{n,a,k,v,t}`. Decision: `packages/core/src/attestation.ts` **issues the PR draft layout (v1, k/v)** and **verifies both** layouts (chosen by envelope version). All format knowledge is in that one file (swap point for an EIP-712 fallback if ever needed; not needed so far).
+- Proof: unit test reproduces byte-for-byte the payload + envelope of a real mainnet attestation (`jkm.eth`, `com.x`, attested by `atst.lighthousegov.eth`, valid per atst.me on 2026-09-26) and recovers the attester `0xf82A…9783`. 10/10 tests green (tamper, owner change, attester rotation, malformed, hex+base64).
+- Limitation: atst.me's API resolves on **mainnet** only, so our Sepolia attestations cannot be shown "valid" in the playground UI; our own verifier is the demo surface. Mention atst.me compatibility via the mainnet vector.
+- Attester = the org's ENS name; it must resolve (addr) to the org signing address -> M1 must `setAddress` on the org resolver. `a` = manager of the member subname = org wallet (org owns all subnames).
+- Telegram record key (proposal): `org.telegram.id` (numeric id). Also `org.role`, `org.since`.
+
+## 2026-09-26 — Tooling notes
+- Blockscout (eth-sepolia.blockscout.com) gives verified ABIs for all ENSv2 Sepolia contracts -> saved in `packages/core/abis/`; deployed signatures match the docs.
+- pnpm enforces `minimumReleaseAge` (supply-chain): versions published <24h ago are refused. Pinned dotenv 18.0.3 and vitest 5.0.1 for that reason. Do not bypass.
+- pnpm 12.6.0 is what `npm i -g pnpm` installs here; build scripts need `allowBuilds` in `pnpm-workspace.yaml` (esbuild only).
+- ENSv2 design for the demo: separate resolver for `team.<org>.eth` (HR gets only ROLE_SET_TEXT there, root resolver stays org-only); HR gets REGISTRAR|UNREGISTER|RENEW on the team registry ROOT only.

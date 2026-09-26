@@ -134,7 +134,7 @@ Requirements: Node 22, pnpm.
 pnpm install
 cp .env.example .env            # then: pnpm spike:wallets  (generates throwaway testnet keys into .env)
 # fund the printed ORG and HR addresses with Sepolia ETH (faucet)
-pnpm test                       # 47 tests
+pnpm test                       # 70 tests
 pnpm rehearse                   # replays the whole demo against the live chain, with assertions
 pnpm --filter @kakunin/scripts seed      # idempotent: attester address, members, attestations (add --dry-run to preview)
 pnpm --filter @kakunin/web build && pnpm --filter @kakunin/web start   # http://localhost:3000
@@ -150,6 +150,10 @@ The 4-minute demo script and Q&A cheat sheet are in [`docs/DEMO.md`](docs/DEMO.m
 - ✅ Telegram bot logic (onboarding, forwarded messages, alerts): unit-tested; live run needs a bot token
 - ✅ x402 paid check + agent screened by the live Intercepta API (one payment approved, one blocked): tested on Base Sepolia
 - ⏳ Curvegrid MultiBaas indexing: not done, see `specs/DECISIONS.md`
+
+## Security
+
+A security review with live attack tests is in [`docs/SECURITY.md`](docs/SECURITY.md) (findings, fixes, accepted limitations). Secrets are scanned across the whole git history; dependency audit is clean.
 
 ## AI attribution
 

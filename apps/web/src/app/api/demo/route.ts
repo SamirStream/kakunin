@@ -2,6 +2,7 @@ import { createWalletClient, http, type Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { sepolia } from 'viem/chains'
 import { DEMO_MEMBERS, revokeDemoMember, seedDemo } from '@kakunin/core'
+import { demoSignerBlocked } from '@/lib/guard'
 import { invalidate, json, pub, store } from '@/lib/server'
 
 export const dynamic = 'force-dynamic'
@@ -15,8 +16,8 @@ const ctx = (key: string) => {
 }
 
 export async function POST(req: Request) {
-  const host = new URL(req.url).hostname
-  if (process.env.KAKUNIN_DEMO_SIGNER !== '1' || !['localhost', '127.0.0.1'].includes(host)) return json({ error: 'demo signer disabled' }, 403)
+  const blocked = demoSignerBlocked(req)
+  if (blocked) return blocked
   const { action, label } = (await req.json().catch(() => ({}))) as { action?: string; label?: string }
   const hr = ctx('HR_PRIVATE_KEY')
   if (action === 'revoke' && label) await revokeDemoMember(hr, label)

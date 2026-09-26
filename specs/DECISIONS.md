@@ -92,3 +92,6 @@
 - Our mapping thresholds (ours, the API publishes none): any `sanction_address`/`known_scammer` trait => critical; score >=75 critical, >=50 high, >=20 medium, else low. The agent refuses at high, asks a human at medium/unknown, and NEVER auto-pays when screening errors.
 - Live run: payment to the real API approved and settled (agent 20 -> 19.999 USDC, org +0.001 USDC on Base Sepolia via the public x402 facilitator); payment to the clone aborted before signing with Intercepta's reasons. Tests: `apps/paid-api` 7 (mapping, from responses recorded live), `packages/core` 46.
 - Note: the API key was pasted into the chat by the builder to save time; it is a free sandbox key (1,000 requests), stored only in `.env`. Rotate it via Intercepta if that is a concern.
+
+## 2026-09-26 — Security review (see docs/SECURITY.md)
+- Found and fixed a critical flaw in my own M4 work: `/api/invite` was unauthenticated (anyone could obtain an invite for an existing member and get their own Telegram ID attested on that subname). Invites now need an HR/ORG wallet signature (5 min, bound to org+member). Also: demo signer routes refuse proxied requests and the web binds to 127.0.0.1; rate limits on web and bot; postcss pinned (audit clean); secrets scan of all commits clean. 70 tests (52 core, 7 paid-api, 11 bot).

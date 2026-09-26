@@ -1,10 +1,13 @@
 import { checkIdentity, type CheckResult } from '@kakunin/core'
+import { limited } from '@/lib/guard'
 import { getDirectory, json, org, reader, store } from '@/lib/server'
 
 export const dynamic = 'force-dynamic'
 
 // POST { org?, telegramId?, username?, displayName? } -> CheckResult. Non-verified results raise an alert for the org.
 export async function POST(req: Request) {
+  const blocked = limited(req, 'check', 30)
+  if (blocked) return blocked
   const body = (await req.json().catch(() => ({}))) as { org?: string; telegramId?: string; username?: string; displayName?: string }
   const claimed = (body.org ?? org).trim().toLowerCase()
   if (claimed !== org)

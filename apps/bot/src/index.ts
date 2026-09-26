@@ -5,7 +5,7 @@ import { Bot } from 'grammy'
 import { createWalletClient, http, type Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { sepolia } from 'viem/chains'
-import { DEPLOYMENT, chainReader, issueTelegramAttestation, publicClient } from '@kakunin/core'
+import { DEPLOYMENT, chainReader, createRateLimiter, issueTelegramAttestation, publicClient } from '@kakunin/core'
 import { JsonStore } from '@kakunin/core/store'
 import { WELCOME, extractSubject, handleCheck, handleStart, type Deps } from './handlers'
 
@@ -35,6 +35,16 @@ const deps: Deps = {
   },
 }
 const awaitingHandle = new Set<number>()
+
+// Every failed check alerts the org and costs RPC calls: cap each conversation at 12 messages/minute.
+const limiter = createRateLimiter(12, 60_000)
+bot.use(async (ctx, next) => {
+  if (ctx.chat && !limiter.take(String(ctx.chat.id))) {
+    await ctx.reply('Too many requests, please slow down and try again in a minute.').catch(() => {})
+    return
+  }
+  await next()
+})
 
 // Every interaction refreshes the stored @username / display name of a known numeric ID (usernames are mutable).
 bot.use(async (ctx, next) => {

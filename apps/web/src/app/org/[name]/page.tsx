@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { DEPLOYMENT, addMember, revokeMember, setMemberText, ABIS, HR_REGISTRY_ROLES, type TxCtx } from '@kakunin/core/ens'
+import { inviteMessage } from '@kakunin/core/auth'
 import { connectWallet } from '@/lib/wallet'
 
 interface Member { label: string; fqn: string; status: 'active' | 'former'; role: string | null; since: string | null; registeredAt: number; revokedAt?: number; telegramId: string | null; username: string | null }
@@ -62,19 +63,24 @@ export default function OrgPage() {
     await addMember(ctx, label)
     await setMemberText(ctx, label, 'org.role', form.role || 'Member')
     await setMemberText(ctx, label, 'org.since', form.since)
-    const inv = await fetch('/api/invite', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ label }) }).then((r) => r.json())
-    if (inv.url) setInvite({ label, url: inv.url })
+    setInvite({ label, url: (await requestInvite(label)).url })
     setForm((f) => ({ ...f, label: '', role: '' }))
   })
   const revoke = (label: string) => run(`rev-${label}`, async () => {
     if (!ctx) throw new Error('Connect the HR wallet first')
     await revokeMember(ctx, label)
   })
-  const makeInvite = (label: string) => run(`inv-${label}`, async () => {
-    const inv = await fetch('/api/invite', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ label }) }).then((r) => r.json())
+  // An invite lets its holder bind THEIR Telegram ID to the member subname, so the API only issues it against a fresh
+  // signature from the HR/ORG wallet (see packages/core/src/auth.ts).
+  async function requestInvite(label: string): Promise<{ url: string }> {
+    if (!ctx) throw new Error('Connect the HR or ORG wallet to create invites')
+    const issuedAt = Date.now()
+    const signature = await ctx.wallet.signMessage({ account: ctx.account, message: inviteMessage(DEPLOYMENT.orgName, label, issuedAt) })
+    const inv = await fetch('/api/invite', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ label, issuedAt, signature }) }).then((r) => r.json())
     if (inv.error) throw new Error(inv.error)
-    setInvite({ label, url: inv.url })
-  })
+    return inv
+  }
+  const makeInvite = (label: string) => run(`inv-${label}`, async () => setInvite({ label, url: (await requestInvite(label)).url }))
   const grantHr = (grant: boolean) => run('deleg', async () => {
     if (!ctx) throw new Error('Connect the ORG wallet first')
     const req = { address: DEPLOYMENT.teamRegistry, abi: ABIS.registry, functionName: grant ? 'grantRootRoles' : 'revokeRootRoles', args: [HR_REGISTRY_ROLES, DEPLOYMENT.hrWallet] as const }
@@ -119,7 +125,7 @@ export default function OrgPage() {
                   <td className="px-5 py-3 text-right">
                     {m.status === 'active' && (
                       <div className="flex justify-end gap-2">
-                        <button className="btn" onClick={() => makeInvite(m.label)} disabled={busy !== null}>Invite link</button>
+                        <button className="btn" onClick={() => makeInvite(m.label)} disabled={busy !== null || !ctx} title={ctx ? 'Sign with the HR/ORG wallet to create a one-time link' : 'Connect the HR wallet first'}>Invite link</button>
                         <button className="btn btn-danger" onClick={() => revoke(m.label)} disabled={busy !== null || !ctx}>{busy === `rev-${m.label}` ? 'Revoking…' : 'Revoke'}</button>
                       </div>
                     )}

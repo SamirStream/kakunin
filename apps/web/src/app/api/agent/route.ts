@@ -1,6 +1,7 @@
 import { privateKeyToAccount } from 'viem/accounts'
 import { makeAgent } from '@kakunin/paid-api/agent'
 import { getScreener } from '@kakunin/paid-api/screener'
+import { demoSignerBlocked } from '@/lib/guard'
 import { json } from '@/lib/server'
 
 export const dynamic = 'force-dynamic'
@@ -15,8 +16,8 @@ const TARGETS = [
 ] as const
 
 export async function POST(req: Request) {
-  const host = new URL(req.url).hostname
-  if (process.env.KAKUNIN_DEMO_SIGNER !== '1' || !['localhost', '127.0.0.1'].includes(host)) return json({ error: 'demo signer disabled' }, 403)
+  const blocked = demoSignerBlocked(req)
+  if (blocked) return blocked
   const pk = process.env.AGENT_PRIVATE_KEY
   if (!pk || !/^0x[0-9a-fA-F]{64}$/.test(pk)) return json({ error: 'AGENT_PRIVATE_KEY missing in .env' }, 500)
   let screener

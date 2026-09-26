@@ -42,6 +42,13 @@ line(Array.isArray(al?.alerts), 'alerts feed readable', al ? `${al.alerts.length
 const token = process.env.DEMO_ADMIN_TOKEN
 const noTok = await post('/api/demo', { action: 'nope' })
 line(noTok.status === 403, 'demo actions refuse callers without the token (403)', `got ${noTok.status}`)
+
+// Telegram Mini App: the page loads, and its API rejects callers without Telegram's signed initData.
+line((await get('/tg')).status === 200, 'Mini App page /tg')
+const tgNo = await post('/api/tg/me')
+line(tgNo.status === 401, 'Mini App API refuses calls without signed initData (401)', `got ${tgNo.status}`)
+const tgAdminNo = await post('/api/tg/admin/revoke', { label: 'alice' }, { 'x-tg-init': 'user=%7B%22id%22%3A1%7D&auth_date=1&hash=' + '0'.repeat(64) })
+line(tgAdminNo.status === 401, 'Mini App admin actions refuse a forged signature (401)', `got ${tgAdminNo.status}`)
 if (token) {
   const withTok = await post('/api/demo', { action: 'nope' }, { 'x-demo-token': token })
   line(withTok.status === 400, 'demo actions accept the admin token', withTok.status === 403 ? '-> set DEMO_ADMIN_TOKEN + KAKUNIN_DEMO_SIGNER=1 in Vercel (same value as .env)' : `got ${withTok.status}`)

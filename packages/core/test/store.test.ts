@@ -130,6 +130,10 @@ describe.each(backends)('Store contract: %s', (_name, make) => {
     expect((await a.decideReport(r1.id, 'confirmed'))?.status).toBe('confirmed')
     expect(await b.decideReport(r1.id, 'confirmed')).toBeNull() // cannot decide another org's report
     expect(confirmedImpersonators(await a.reports())).toMatchObject([{ telegramId: '9', username: 'fake_alice', note: 'DM me for a job' }])
+    const comp = await a.addReport({ subject: { telegramId: '9' }, kind: 'compromised' })
+    expect(comp.id).not.toBe(r1.id) // same account, different kind: a separate report
+    await a.decideReport(comp.id, 'confirmed')
+    expect(confirmedImpersonators(await a.reports())).toHaveLength(1) // a compromised-account report never makes someone an impersonator
     await a.decideReport(r1.id, 'dismissed')
     expect(confirmedImpersonators(await a.reports())).toEqual([])
     const again = await a.addReport({ subject: { telegramId: '9' } }) // a dismissed report does not swallow new ones

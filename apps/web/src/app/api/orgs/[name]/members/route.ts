@@ -1,12 +1,12 @@
-import { addMember, revokeMember, setMemberText } from '@kakunin/core'
+import { addMember, markCompromised, revokeMember, setMemberText } from '@kakunin/core'
 import { limited } from '@/lib/guard'
 import { isResponse, requireAdmin } from '@/lib/orgauth'
-import { LABEL_RE, botUsername, dropTeamCaches, json, orgOr404, orgSigners } from '@/lib/server'
+import { LABEL_RE, botUsername, dropTeamCaches, getDirectory, json, orgOr404, orgSigners } from '@/lib/server'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // up to three Sepolia transactions
 
-// POST { action: 'add' | 'revoke', label, role?, since? } with the admin's wallet signature in x-kk-issued / x-kk-sig.
+// POST { action: 'add' | 'revoke' | 'compromised', label, role?, since? } with the admin's wallet signature in x-kk-issued / x-kk-sig.
 // The server then acts with the organisation's operator key (the reference org: its HR key), so admins never need gas.
 export async function POST(req: Request, { params }: { params: Promise<{ name: string }> }) {
   const blocked = limited(req, 'org-members', 20)
@@ -15,12 +15,23 @@ export async function POST(req: Request, { params }: { params: Promise<{ name: s
   if (isResponse(ctx)) return ctx
   const { action, label, role, since } = (await req.json().catch(() => ({}))) as { action?: string; label?: string; role?: string; since?: string }
   if (!label || !LABEL_RE.test(label)) return json({ error: 'invalid_label', message: 'Use a-z, 0-9 and dashes (max 32).' }, 400)
-  if (action !== 'add' && action !== 'revoke') return json({ error: 'unknown_action' }, 400)
+  if (action !== 'add' && action !== 'revoke' && action !== 'compromised') return json({ error: 'unknown_action' }, 400)
   if (role && role.length > 60) return json({ error: 'role_too_long' }, 400)
-  const auth = await requireAdmin(req, ctx, action === 'add' ? 'add-member' : 'revoke-member', label)
+  const auth = await requireAdmin(req, ctx, action === 'add' ? 'add-member' : action === 'compromised' ? 'mark-compromised' : 'revoke-member', label)
   if (isResponse(auth)) return auth
   try {
     const { hr } = orgSigners(ctx)
+    if (action === 'compromised') {
+      // Public on-chain record first (org.status), then the revocation: every check now says "compromised account".
+      const r = await markCompromised(hr, label, ctx.d)
+      // The pending "compromised" reports about this member are now settled.
+      const entry = (await getDirectory(ctx)).find((e) => e.label === label)
+      for (const rep of await ctx.scope.reports())
+        if (rep.kind === 'compromised' && rep.status === 'pending' && ((entry && rep.subject.telegramId === entry.telegramId) || (entry?.username && rep.subject.username === entry.username)))
+          await ctx.scope.decideReport(rep.id, 'confirmed')
+      dropTeamCaches(ctx.name)
+      return json({ ok: true, label, compromised: true, alreadyRevoked: r.skipped })
+    }
     if (action === 'revoke') {
       const r = await revokeMember(hr, label, ctx.d)
       dropTeamCaches(ctx.name)

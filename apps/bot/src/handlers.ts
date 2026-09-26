@@ -1,7 +1,7 @@
 // Telegram-independent bot logic (unit-testable). bot.ts wires these to grammY.
 // The bot serves EVERY organisation on Kakunin: invites carry their organisation, and a check looks the person up in all of them.
 import { checkIdentity, formatAlert, formatResult, relatesToOrg, type CheckResult, type Reader } from '@kakunin/core'
-import type { OrgScope, Store } from '@kakunin/core/store'
+import { confirmedImpersonators, type OrgScope, type Store } from '@kakunin/core/store'
 
 /** One organisation, as the bot needs it. */
 export interface OrgHandle {
@@ -62,6 +62,7 @@ export const WELCOME = [
   '• Forward me a suspicious message, or send a @username.',
   '• I look them up in every project on Kakunin and answer: ✅ verified member · 🕓 former member · ⚠️ lookalike · ❓ unknown.',
   '• To check against one project only: /check acme.eth @username',
+  '• Someone impersonating a project? /report acme.eth @username. An official account looks taken over? /compromised acme.eth @username',
   '',
   'Members: open the invite link your admin sent you to get verified.',
   'Projects: create your team registry at https://kakunin.xyz/create',
@@ -115,7 +116,7 @@ export async function handleCheck(deps: Deps, subject: Subject, only?: string): 
       if (only) return { text: `❓ Kakunin does not know "${only}". Projects register at https://kakunin.xyz/create` }
       continue
     }
-    const result = await checkIdentity(org.reader, subject, await org.scope.directory()).catch(() => null)
+    const result = await checkIdentity(org.reader, subject, await org.scope.directory(), { impersonators: confirmedImpersonators(await org.scope.reports()) }).catch(() => null)
     if (!result) continue
     results.push(result)
     if (result.status !== 'verified' && (only || relatesToOrg(result.status))) {
@@ -130,4 +131,28 @@ export async function handleCheck(deps: Deps, subject: Subject, only?: string): 
   if (!only && best.status === 'unknown' && results.length > 1)
     return { text: `❓ Unknown to ${results.length} projects on Kakunin.\nNone of them lists ${label}. Do not trust claims of working for a project you cannot verify.`, result: best, results }
   return { text: formatResult(best), result: best, results }
+}
+
+/**
+ * /report acme.eth @user [what happened]  (kind 'impersonation')  and  /compromised acme.eth @user  (kind 'compromised').
+ * A report changes nothing public: it goes to the organisation's admins, who confirm it on their dashboard.
+ */
+export async function handleReport(deps: Deps, kind: 'impersonation' | 'compromised', orgName: string | undefined, subject: Subject | null, note?: string): Promise<string> {
+  const cmd = kind === 'compromised' ? '/compromised' : '/report'
+  if (!orgName) return `Name the organisation, then the account: ${cmd} acme.eth @username`
+  const org = await deps.org(orgName.toLowerCase())
+  if (!org) return `❓ Kakunin does not know "${orgName}".`
+  if (!subject || (!subject.telegramId && !subject.username)) return `Which account? ${cmd} ${org.name} @username (or its numeric ID)`
+  const current = await checkIdentity(org.reader, subject, await org.scope.directory()).catch(() => null)
+  if (kind === 'impersonation' && current?.status === 'verified') return `That account is a verified member of ${org.name}. If it seems taken over, use /compromised ${org.name} @username`
+  if (kind === 'compromised' && current?.status !== 'verified') return `Only a verified member of ${org.name} can be reported as compromised.`
+  const report = await org.scope.addReport({ kind, subject: { telegramId: subject.telegramId, username: subject.username, displayName: subject.displayName }, note })
+  if (report.count === 1) {
+    const who = subject.username ? `@${subject.username}` : `ID ${subject.telegramId}`
+    const text = kind === 'compromised'
+      ? `🚨 ${org.name}: a verified member's account (${who}) was reported as COMPROMISED. If it is, mark it compromised on your dashboard now: https://kakunin.xyz/org/${org.name}`
+      : `🚩 ${org.name}: an account was reported as impersonating you (${who}). Review it on your dashboard: https://kakunin.xyz/org/${org.name}`
+    await deps.notify(await org.scope.adminChats(), text).catch(() => {})
+  }
+  return `Thank you. ${org.name} was notified. Nothing is published until its admins confirm the report.`
 }

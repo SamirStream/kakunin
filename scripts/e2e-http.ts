@@ -85,7 +85,47 @@ ok(t.data.status !== 'verified', `an unrelated handle is not verified (${t.data.
 const feed = await fetch(`${base}/api/alerts?org=${org}`, { headers: await (async () => { const i = Date.now(); return { 'x-kk-issued': String(i), 'x-kk-sig': await owner.signMessage({ message: actionMessage(org, 'session', '', i) }) } })() })
 const fd = (await feed.json()) as { alerts: { detail: string }[]; telegramAdmins: number }
 ok(feed.status === 200 && fd.telegramAdmins >= 1 && fd.alerts.length >= 1, `the owner sees the private alert feed (${fd.alerts?.length} alerts, ${fd.telegramAdmins} Telegram admin)`)
-const r2 = await call(owner, 'revoke-member', l2, `/api/orgs/${org}/members`, { action: 'revoke', label: l2 })
-ok(r2.status === 200 && (await check({ telegramId: String(memberId) })).status === 'former', `revoking ${l2} flips the answer to FORMER`)
+// ---- Reports: an impersonator, and a compromised official account ----
+const report = (body: object) => fetch(base + '/api/report', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ org, ...body }) }).then(async (r) => ({ status: r.status, data: (await r.json()) as Record<string, any> }))
+const session = async () => { const i = Date.now(); return { 'x-kk-issued': String(i), 'x-kk-sig': await owner.signMessage({ message: actionMessage(org, 'session', '', i) }) } }
+const fake = 'impostor_' + Math.floor(Math.random() * 90000 + 10000)
+
+let rp = await report({ username: fake, note: 'pretends to be HR, asks to run a repo' })
+ok(rp.status === 200 && rp.data.count === 1, 'anyone can report an impersonator (queued, nothing public yet)')
+rp = await report({ username: fake })
+ok(rp.status === 200 && rp.data.count === 2, 'a second report of the same account is merged')
+ok((await check({ username: fake })).status !== 'lookalike' || !(await check({ username: fake }) as any).confirmed, 'a pending report changes nothing public')
+rp = await report({ telegramId: String(memberId) })
+ok(rp.status === 409, `a verified member cannot be reported as an impersonator (${rp.status})`)
+rp = await report({ kind: 'compromised', username: 'random_nobody_x1' })
+ok(rp.status === 409, `only a verified member can be reported as compromised (${rp.status})`)
+ok((await fetch(`${base}/api/orgs/${org}/reports`)).status === 401, 'the report queue needs an admin signature')
+
+const q = (await (await fetch(`${base}/api/orgs/${org}/reports`, { headers: await session() })).json()) as { reports: { id: string; subject: { username?: string }; status: string; count: number }[] }
+const mine = q.reports.find((x) => x.subject.username === fake)
+ok(!!mine && mine.status === 'pending' && mine.count === 2, 'the owner sees the pending report with its count')
+const bad = await call(stranger, 'confirm-report', mine!.id, `/api/orgs/${org}/reports`, { id: mine!.id, decision: 'confirm' })
+ok(bad.status === 403, `a stranger cannot confirm a report (${bad.status})`)
+const wrong = await call(owner, 'dismiss-report', mine!.id, `/api/orgs/${org}/reports`, { id: mine!.id, decision: 'confirm' })
+ok(wrong.status === 403, `a signature for another decision is refused (${wrong.status})`)
+const conf = await call(owner, 'confirm-report', mine!.id, `/api/orgs/${org}/reports`, { id: mine!.id, decision: 'confirm' })
+ok(conf.status === 200, 'the owner confirms the impersonator')
+const pub = (await check({ username: fake })) as { status: string; confirmed?: { note?: string } }
+ok(pub.status === 'lookalike' && !!pub.confirmed && /HR/.test(pub.confirmed.note ?? ''), 'every check now says: reported impersonator, with the note')
+const tgc = await tg('/api/tg/check', adminId, 'Boss', { who: '@' + fake, org })
+ok(tgc.data.status === 'lookalike' && !!tgc.data.confirmed, 'the Mini App and the bot engine say so too')
+const retract = await call(owner, 'dismiss-report', mine!.id, `/api/orgs/${org}/reports`, { id: mine!.id, decision: 'dismiss' })
+ok(retract.status === 200 && (await check({ username: fake }) as any).confirmed === undefined, 'a confirmed report can be retracted')
+
+rp = await report({ kind: 'compromised', telegramId: String(memberId), note: 'posting airdrop links' })
+ok(rp.status === 200, `anyone can report an official account as compromised (${rp.status})`)
+const cm = await call(owner, 'mark-compromised', l2, `/api/orgs/${org}/members`, { action: 'compromised', label: l2 })
+ok(cm.status === 200 && cm.data.compromised === true, 'the owner marks the member compromised (record on-chain, then revoked)')
+const cres = (await check({ telegramId: String(memberId) })) as { status: string; compromised?: boolean }
+ok(cres.status === 'former' && cres.compromised === true, 'every check now says: compromised account')
+const q2 = (await (await fetch(`${base}/api/orgs/${org}/reports`, { headers: await session() })).json()) as { reports: { kind: string; status: string }[] }
+ok(q2.reports.some((x) => x.kind === 'compromised' && x.status === 'confirmed'), 'the pending compromised report was settled automatically')
+const mem = (await (await fetch(`${base}/api/members?org=${org}&fresh=1`)).json()) as { members: { label: string; compromised?: boolean }[] }
+ok(mem.members.find((m) => m.label === l2)?.compromised === true, 'the dashboard data flags the member as compromised')
 void tgId
 console.log(process.exitCode ? '\nFAILED' : '\nAll checks passed')

@@ -18,7 +18,8 @@ export async function GET(req: Request) {
         const active = m.status === 'active'
         const [role, since] = active ? await Promise.all([readText(pub, fqn, 'org.role', ctx.d), readText(pub, fqn, 'org.since', ctx.d)]) : [null, null]
         const d = dir.find((e) => e.label === m.label)
-        return { ...m, fqn, role, since, telegramId: d?.telegramId ?? null, username: d?.username ?? null }
+        const compromised = !active && (await ctx.reader.readTextDirect(fqn, 'org.status')) === 'compromised'
+        return { ...m, fqn, role, since, compromised, telegramId: d?.telegramId ?? null, username: d?.username ?? null }
       }),
     )
   })

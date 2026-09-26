@@ -1,6 +1,6 @@
-import { checkIdentity, type CheckResult } from '@kakunin/core'
+import type { CheckResult } from '@kakunin/core'
 import { limited } from '@/lib/guard'
-import { getDirectory, getOrg, json } from '@/lib/server'
+import { checkFor, getOrg, json } from '@/lib/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   const ctx = await getOrg(body.org)
   if (!ctx) return json({ status: 'unknown', org: (body.org ?? '').trim().toLowerCase(), reason: 'org-not-registered' }, 200)
   const input = { telegramId: body.telegramId?.trim() || undefined, username: body.username?.trim() || undefined, displayName: body.displayName?.trim() || undefined }
-  const result: CheckResult = await checkIdentity(ctx.reader, input, await getDirectory(ctx))
+  const result: CheckResult = await checkFor(ctx, input)
   if (result.status !== 'verified' && !(result.status === 'unknown' && result.reason === 'no-identifier'))
     await ctx.scope.addAlert({ kind: result.status, subject: input, detail: input.username ? `@${input.username.replace(/^@/, '')}` : (input.displayName ?? input.telegramId ?? 'unknown') })
   return json(result)

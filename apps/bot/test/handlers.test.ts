@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { JsonStore } from '@kakunin/core/store'
 import { DEPLOYMENT, type Reader } from '@kakunin/core'
-import { extractSubject, handleCheck, handleStart, type Deps, type OrgHandle } from '../src/handlers'
+import { extractSubject, handleCheck, handleReport, handleStart, type Deps, type OrgHandle } from '../src/handlers'
 
 const emptyReader = (orgName: string, over: Partial<Reader> = {}): Reader => ({
   orgName, deployment: DEPLOYMENT, listMembers: async () => [],
@@ -116,5 +116,47 @@ describe('handleCheck', () => {
   it('a notify failure never breaks the reply', async () => {
     const { deps } = mkDeps({ notify: async () => { throw new Error('blocked') } })
     expect((await handleCheck(deps, { username: 'nobody_here' }, 'acme.eth')).text).toMatch(/^❓/)
+  })
+})
+
+describe('handleReport', () => {
+  it('needs an organisation and an account', async () => {
+    const { deps } = mkDeps()
+    expect(await handleReport(deps, 'impersonation', undefined, { username: 'fake_x' })).toMatch(/Name the organisation/)
+    expect(await handleReport(deps, 'impersonation', 'acme.eth', null)).toMatch(/Which account/)
+    expect(await handleReport(deps, 'impersonation', 'nope.eth', { username: 'fake_x' })).toMatch(/does not know/)
+  })
+  it('queues the report for that organisation only and alerts its admins once', async () => {
+    const { deps, store, notify } = mkDeps()
+    await store.forOrg('acme.eth').addOrgAdminChat(9)
+    expect(await handleReport(deps, 'impersonation', 'acme.eth', { username: 'fake_alice' }, 'DM job offer')).toMatch(/Nothing is published/)
+    await handleReport(deps, 'impersonation', 'acme.eth', { username: 'Fake_Alice' })
+    const list = await store.forOrg('acme.eth').reports()
+    expect(list).toHaveLength(1)
+    expect(list[0]).toMatchObject({ kind: 'impersonation', status: 'pending', count: 2, note: 'DM job offer' })
+    expect(await store.forOrg('beta.eth').reports()).toEqual([])
+    expect(notify).toHaveBeenCalledOnce() // the second report of the same account does not spam the admins
+    expect(notify).toHaveBeenCalledWith([9], expect.stringContaining('impersonating'))
+  })
+  it('only a verified member can be reported as compromised', async () => {
+    const { deps, store } = mkDeps()
+    expect(await handleReport(deps, 'compromised', 'acme.eth', { username: 'someone_random' })).toMatch(/Only a verified member/)
+    expect(await store.forOrg('acme.eth').reports()).toEqual([])
+  })
+})
+
+describe('handleCheck with confirmed impersonators', () => {
+  it('an account an admin confirmed is reported as such', async () => {
+    const { deps, store } = mkDeps()
+    const o = store.forOrg('acme.eth')
+    const r = await o.addReport({ subject: { username: 'scam_recruiter' }, note: 'fake HR' })
+    await o.decideReport(r.id, 'confirmed')
+    const out = await handleCheck(deps, { username: 'scam_recruiter' })
+    expect(out.text).toMatch(/^🚫 Reported impersonator of acme\.eth/)
+  })
+  it('a pending report changes nothing public', async () => {
+    const { deps, store } = mkDeps()
+    await store.forOrg('acme.eth').addReport({ subject: { username: 'scam_recruiter' } })
+    expect((await handleCheck(deps, { username: 'scam_recruiter' })).text).toMatch(/^❓/)
   })
 })

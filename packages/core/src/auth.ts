@@ -35,7 +35,7 @@ export async function verifyInviteAuth(args: {
 // fresh signature (valid five minutes) naming the exact action and target.
 export const ACTION_MAX_AGE_MS = 5 * 60 * 1000
 export const SESSION_MAX_AGE_MS = 60 * 60 * 1000
-export type DashboardAction = 'session' | 'add-member' | 'revoke-member' | 'invite' | 'telegram-admin'
+export type DashboardAction = 'session' | 'add-member' | 'revoke-member' | 'invite' | 'telegram-admin' | 'mark-compromised' | 'confirm-report' | 'dismiss-report'
 
 export const actionMessage = (org: string, action: DashboardAction, target: string, issuedAtMs: number) =>
   `Kakunin ${action}\norg: ${org}\ntarget: ${target || '-'}\nissued: ${issuedAtMs}`

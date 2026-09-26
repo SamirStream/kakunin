@@ -7,7 +7,7 @@ import {
   DEPLOYMENT, TELEGRAM_KEY, checkIdentity, getMemberState, listMembers, memberName, publicClient, readText,
   type CheckResult, type DirectoryEntry,
 } from '@kakunin/core'
-import { createStore } from '@kakunin/core/store'
+import { confirmedImpersonators, createStore } from '@kakunin/core/store'
 import { createOrgResolver, type OrgRuntime } from '@kakunin/core/orgs'
 // Bundled at build time (no runtime fs access), so it also works on serverless hosts.
 import demoDirectory from '../../../../demo/directory.json'
@@ -74,6 +74,23 @@ export async function getDirectory(ctx: OrgCtx): Promise<DirectoryEntry[]> {
   if (!ctx.demo) return live
   const ids = new Set(live.map((e) => e.telegramId))
   return [...live, ...(demoDirectory as DirectoryEntry[]).filter((e) => !ids.has(e.telegramId))]
+}
+
+/** The check engine with everything the organisation knows: its directory and the impersonators its admins confirmed. */
+export async function checkFor(ctx: OrgCtx, input: { telegramId?: string; username?: string; displayName?: string }): Promise<CheckResult> {
+  const [directory, reports] = await Promise.all([getDirectory(ctx), ctx.scope.reports()])
+  return checkIdentity(ctx.reader, input, directory, { impersonators: confirmedImpersonators(reports) })
+}
+
+/** Best-effort Telegram message to every admin chat of an organisation (the web app has the bot token too). */
+export async function notifyAdmins(ctx: OrgCtx, text: string): Promise<void> {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token || token === 'placeholder') return
+  for (const chat of await ctx.scope.adminChats().catch(() => [])) {
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat_id: chat, text }), signal: AbortSignal.timeout(5000),
+    }).catch(() => {})
+  }
 }
 
 /** After any change to an organisation's team, drop the cached reads so the next screen shows the truth. */

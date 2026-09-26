@@ -12,7 +12,8 @@ import { InviteQR } from '@/components/InviteQR'
 import { OrgInsights } from '@/components/OrgInsights'
 import { connectAccount, connectWallet, type Signer } from '@/lib/wallet'
 
-interface Member { label: string; fqn: string; status: 'active' | 'former'; role: string | null; since: string | null; registeredAt: number; revokedAt?: number; telegramId: string | null; username: string | null }
+interface Report { id: string; at: number; kind?: 'impersonation' | 'compromised'; subject: { telegramId?: string; username?: string }; note?: string; count: number; status: 'pending' | 'confirmed' | 'dismissed' }
+interface Member { label: string; fqn: string; status: 'active' | 'former'; compromised?: boolean; role: string | null; since: string | null; registeredAt: number; revokedAt?: number; telegramId: string | null; username: string | null }
 interface Info { org: string; team: string; owner: string; operator: string | null; demo: boolean; teamRegistry: string; createdAt: number | null; members: Member[] }
 interface Delegation {
   hr: string; org: string; selfServe: boolean; ownerControlsRoot: boolean
@@ -39,6 +40,7 @@ export default function OrgPage() {
   const [deleg, setDeleg] = useState<Delegation | null>(null)
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [tgAdmins, setTgAdmins] = useState(0)
+  const [reports, setReports] = useState<Report[]>([])
   const [session, setSession] = useState<Session | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
@@ -65,6 +67,10 @@ export default function OrgPage() {
     if (r?.ok) setInfo(await r.json())
     const a = await fetch(`/api/alerts?org=${encodeURIComponent(name)}`, { cache: 'no-store', headers: session ? authHeaders(session) : undefined }).catch(() => null)
     if (a?.ok) { const d = await a.json(); setAlerts(d.alerts); setTgAdmins(d.telegramAdmins) } else if (a?.status === 403 || a?.status === 401) { setAlerts([]); if (session) setSession(null) }
+    if (session) {
+      const rr = await fetch(`/api/orgs/${encodeURIComponent(name)}/reports`, { cache: 'no-store', headers: authHeaders(session) }).catch(() => null)
+      if (rr?.ok) setReports((await rr.json()).reports)
+    } else setReports([])
   }, [name, session])
   useEffect(() => { void refresh(); const t = setInterval(() => void refresh(), 5000); return () => clearInterval(t) }, [refresh])
   useEffect(() => { fetch(`/api/delegation?org=${encodeURIComponent(name)}`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((d) => d && setDeleg(d)).catch(() => {}) }, [name])
@@ -104,6 +110,11 @@ export default function OrgPage() {
     setForm((f) => ({ ...f, label: '', role: '' }))
   })
   const revoke = (label: string) => run(`rev-${label}`, async () => { await signedCall('revoke-member', label, `/api/orgs/${name}/members`, { action: 'revoke', label }) })
+  const compromise = (label: string) => run(`cmp-${label}`, async () => {
+    if (!window.confirm(`Mark ${label} as compromised? This publishes on-chain that their account was taken over, and revokes them. Every check of that account will warn people.`)) return
+    await signedCall('mark-compromised', label, `/api/orgs/${name}/members`, { action: 'compromised', label })
+  })
+  const decide = (id: string, decision: 'confirm' | 'dismiss') => run(`rep-${id}`, async () => { await signedCall(decision === 'confirm' ? 'confirm-report' : 'dismiss-report', id, `/api/orgs/${name}/reports`, { id, decision }) })
   const makeInvite = (label: string) => run(`inv-${label}`, async () => {
     const r = await signedCall<{ url: string }>('invite', label, '/api/invite', { org: name, label })
     setInvite({ title: `One-time Telegram link for ${label}`, url: r.url, note: 'Opening it from their own Telegram binds their numeric ID and writes the attestation on ENS. Single use, valid for 7 days.' })
@@ -196,12 +207,13 @@ export default function OrgPage() {
                 <tr key={m.label} className="border-t" style={{ borderColor: 'var(--line)' }}>
                   <td className="px-5 py-3"><Link className="font-semibold underline" href={info.demo ? `/v/${m.label}` : `/v/${m.label}?org=${name}`}>{m.label}</Link><div className="mono break-all" style={{ color: 'var(--muted)' }}>{m.fqn}</div></td>
                   <td className="px-3 py-3">{m.role ?? '—'}<div className="text-xs" style={{ color: 'var(--muted)' }}>{m.since ? `since ${m.since}` : ''}</div></td>
-                  <td className="px-3 py-3">{m.status === 'active' ? <span className="pill pill-ok">active</span> : <span className="pill pill-warn">former · revoked {day(m.revokedAt)}</span>}</td>
+                  <td className="px-3 py-3">{m.status === 'active' ? <span className="pill pill-ok">active</span> : <span className={`pill ${m.compromised ? 'pill-bad' : 'pill-warn'}`}>{m.compromised ? 'compromised' : 'former'} · revoked {day(m.revokedAt)}</span>}</td>
                   <td className="px-3 py-3 mono">{m.username ? `@${m.username}` : '—'}<div style={{ color: 'var(--muted)' }}>{m.telegramId ?? 'not onboarded'}</div></td>
                   <td className="px-5 py-3 text-right">
                     {m.status === 'active' && (
                       <div className="flex justify-end gap-2">
                         <button className="btn" onClick={() => makeInvite(m.label)} disabled={busy !== null || !isAdmin} title={isAdmin ? 'Sign to create a one-time link' : 'Sign in with the owner wallet first'}>{busy === `inv-${m.label}` ? 'Signing…' : 'Invite link'}</button>
+                        <button className="btn btn-danger" onClick={() => compromise(m.label)} disabled={busy !== null || !isAdmin} title={isAdmin ? 'Their Telegram account was taken over: publish it on-chain and revoke' : 'Sign in with the owner wallet first'}>{busy === `cmp-${m.label}` ? 'Publishing…' : 'Compromised'}</button>
                         <button className="btn btn-danger" onClick={() => revoke(m.label)} disabled={busy !== null || !isAdmin} title={isAdmin ? 'Sign to revoke on-chain' : 'Sign in with the owner wallet first'}>{busy === `rev-${m.label}` ? 'Revoking… (~15 s)' : 'Revoke'}</button>
                       </div>
                     )}
@@ -274,6 +286,34 @@ export default function OrgPage() {
             </div>
           </div>
         )}
+      </section>
+
+      <section className="card space-y-3 p-5">
+        <h2 className="font-bold">Reports from the public{reports.filter((r) => r.status === 'pending').length ? ` (${reports.filter((r) => r.status === 'pending').length} to review)` : ''}</h2>
+        <p className="text-xs" style={{ color: 'var(--muted)' }}>Anyone can report an account that impersonates {info.org}, or an official member account that looks taken over. Nothing is published until you decide: confirming an impersonator makes every check of that account say so, and marking a member compromised is recorded on-chain.</p>
+        {!info.demo && !session ? <p className="text-sm" style={{ color: 'var(--muted)' }}>Sign in with the owner wallet to review reports.</p>
+          : reports.length === 0 ? <p className="text-sm" style={{ color: 'var(--muted)' }}>No reports yet. The check page has a “Report this account” button.</p> : (
+            <ul className="divide-y" style={{ borderColor: 'var(--line)' }}>
+              {reports.slice(0, 20).map((r) => {
+                const who = r.subject.username ? `@${r.subject.username}` : `ID ${r.subject.telegramId}`
+                const member = r.kind === 'compromised' ? members.find((m) => m.status === 'active' && ((r.subject.telegramId && m.telegramId === r.subject.telegramId) || (r.subject.username && m.username === r.subject.username))) : undefined
+                return (
+                  <li key={r.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm" style={{ borderColor: 'var(--line)' }}>
+                    <div className="min-w-0 space-y-0.5">
+                      <div><span className={`pill ${r.kind === 'compromised' ? 'pill-bad' : 'pill-warn'}`}>{r.kind === 'compromised' ? 'official account compromised?' : 'impersonator'}</span> <span className="mono">{who}</span> <span className="text-xs" style={{ color: 'var(--muted)' }}>· {r.count} report{r.count > 1 ? 's' : ''} · {new Date(r.at).toLocaleString()}</span></div>
+                      {r.note && <p className="text-xs" style={{ color: 'var(--muted)' }}>“{r.note}”</p>}
+                      {r.status !== 'pending' && <p className="text-xs font-semibold" style={{ color: r.status === 'confirmed' ? 'var(--bad)' : 'var(--muted)' }}>{r.status === 'confirmed' ? (r.kind === 'compromised' ? 'Marked compromised' : 'Published as a reported impersonator') : 'Dismissed'}</p>}
+                    </div>
+                    <div className="flex gap-2">
+                      {r.status === 'pending' && r.kind !== 'compromised' && <button className="btn btn-danger" disabled={busy !== null || !isAdmin} onClick={() => decide(r.id, 'confirm')}>{busy === `rep-${r.id}` ? 'Signing…' : 'Confirm impersonator'}</button>}
+                      {r.status === 'pending' && r.kind === 'compromised' && <button className="btn btn-danger" disabled={busy !== null || !isAdmin || !member} title={member ? '' : 'No active member matches this account'} onClick={() => member && compromise(member.label)}>Mark {member?.label ?? 'member'} compromised</button>}
+                      {r.status !== 'dismissed' && <button className="btn" disabled={busy !== null || !isAdmin} onClick={() => decide(r.id, 'dismiss')}>{r.status === 'confirmed' ? 'Retract' : 'Dismiss'}</button>}
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
       </section>
 
       <section className="card space-y-3 p-5">

@@ -1,8 +1,8 @@
 // x402 seller side for the paid Kakunin check, hosted inside the web app (so it works on Vercel, no extra process).
 import { HTTPFacilitatorClient, x402ResourceServer } from '@x402/core/server'
 import { ExactEvmScheme } from '@x402/evm/exact/server'
-import { DEPLOYMENT, checkIdentity } from '@kakunin/core'
-import { getDirectory, getOrg } from './server'
+import { DEPLOYMENT } from '@kakunin/core'
+import { checkFor, getOrg } from './server'
 
 /** Base Sepolia: the network the public x402 test facilitator supports. */
 export const NETWORK = 'eip155:84532' as const
@@ -31,5 +31,5 @@ export async function paidCheck(req: Request, servedBy: string) {
   const input = { telegramId: q.get('telegramId') ?? undefined, username: q.get('username') ?? undefined, displayName: q.get('displayName') ?? undefined }
   const ctx = await getOrg(q.get('org'))
   if (!ctx) return { served_by: servedBy, result: { status: 'unknown' as const, org: q.get('org') ?? '', reason: 'org-not-registered' } }
-  return { served_by: servedBy, result: await checkIdentity(ctx.reader, input, await getDirectory(ctx)) }
+  return { served_by: servedBy, result: await checkFor(ctx, input) }
 }

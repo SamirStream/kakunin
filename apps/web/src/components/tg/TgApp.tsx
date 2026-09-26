@@ -226,7 +226,7 @@ function CheckTab({ call, tg, say, live, orgs }: Common & { live: boolean; orgs:
         </div>
       </form>
       {busy && <div className="h-28 animate-pulse rounded-2xl" style={{ background: 'var(--info-bg)' }} aria-hidden />}
-      {result && <ResultCard result={result} />}
+      {result && <ResultCard result={result} report={{ org: result.org, who: who.trim() }} />}
       {!result && !busy && (
         <div className="flex flex-wrap items-center gap-2 text-xs" style={{ color: 'var(--muted)' }}>
           Try:

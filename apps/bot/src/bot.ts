@@ -2,12 +2,12 @@
 //   - src/index.ts          : long polling, for local development (`pnpm bot`)
 //   - apps/web /api/telegram : webhook, for the cloud deployment (serverless, no long-running process)
 // Everything here is stateless between updates except an in-memory rate limiter; persistent state lives in the Store.
-import { Bot, InlineKeyboard, Keyboard } from 'grammy'
+import { Bot, InlineKeyboard, Keyboard, type Context } from 'grammy'
 import type { Hex } from 'viem'
 import { createRateLimiter, issueTelegramAttestation, publicClient } from '@kakunin/core'
 import { createOrgResolver } from '@kakunin/core/orgs'
 import type { Store } from '@kakunin/core/store'
-import { WELCOME, extractSubject, handleCheck, handleStart, type Deps } from './handlers'
+import { WELCOME, extractSubject, handleCheck, handleReport, handleStart, type Deps } from './handlers'
 
 export interface BotConfig {
   token: string
@@ -114,6 +114,16 @@ export function createBot(cfg: BotConfig): { bot: Bot; deps: Deps } {
     if (!subject) return ctx.reply('Send a @username, a numeric ID, or forward a message.')
     await ctx.reply((await handleCheck(deps, subject, only)).text)
   })
+  // Reports: /report acme.eth @user [what happened], /compromised acme.eth @user. Nothing is published until an admin confirms.
+  const report = (kind: 'impersonation' | 'compromised') => async (ctx: Context) => {
+    const parts = String(ctx.match ?? '').trim().split(/\s+/).filter(Boolean)
+    const org = parts.find((p) => /^[a-z0-9-]{3,32}\.eth$/i.test(p))
+    const rest = parts.filter((p) => p !== org)
+    const subject = rest.length ? extractSubject({ text: rest[0] }) : null
+    await ctx.reply(await handleReport(deps, kind, org, subject, rest.slice(1).join(' ') || undefined))
+  }
+  bot.command('report', report('impersonation'))
+  bot.command('compromised', report('compromised'))
   // Admin: /subscribe <ADMIN_SECRET> in the org's chat to receive impersonation alerts.
   bot.command('subscribe', async (ctx) => {
     if (!cfg.adminSecret || ctx.match.trim() !== cfg.adminSecret) return ctx.reply('❌ Wrong secret.')

@@ -1,7 +1,6 @@
-import { checkIdentity } from '@kakunin/core'
 import { apiJson, preflight } from '@/lib/api'
 import { limited } from '@/lib/guard'
-import { getDirectory, getOrg } from '@/lib/server'
+import { checkFor, getOrg } from '@/lib/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +15,7 @@ async function handle(input: { org?: string | null; telegramId?: string | null; 
   if (!clean.telegramId && !clean.username && !clean.displayName)
     return apiJson({ ok: false, error: 'missing_identifier', message: 'Provide telegramId, username or displayName.' }, 400)
   if ([clean.telegramId, clean.username, clean.displayName].some((v) => (v?.length ?? 0) > 100)) return apiJson({ ok: false, error: 'too_long' }, 400)
-  const result = await checkIdentity(ctx.reader, clean, await getDirectory(ctx))
+  const result = await checkFor(ctx, clean)
   if (result.status !== 'verified')
     await ctx.scope.addAlert({ kind: result.status, subject: clean, detail: clean.username ? `@${clean.username}` : (clean.displayName ?? clean.telegramId ?? 'unknown') })
   return apiJson({ ok: true, api: 'v1', checkedAt: new Date().toISOString(), result })

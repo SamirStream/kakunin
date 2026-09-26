@@ -1,6 +1,6 @@
-import { checkIdentity, relatesToOrg, type CheckResult } from '@kakunin/core'
+import { relatesToOrg, type CheckResult } from '@kakunin/core'
 import { isResponse, tgAuth } from '@/lib/tg'
-import { getDirectory, json, orgs } from '@/lib/server'
+import { checkFor, json, orgs } from '@/lib/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   for (const name of names.slice(0, 20)) {
     const ctx = await orgs.get(name)
     if (!ctx) { if (named) return json({ status: 'unknown', org: named, reason: 'org-not-registered' }); continue }
-    const result = await checkIdentity(ctx.reader, input, await getDirectory(ctx)).catch(() => null)
+    const result = await checkFor(ctx, input).catch(() => null)
     if (!result) continue
     results.push(result)
     if (result.status !== 'verified' && (named || relatesToOrg(result.status)))

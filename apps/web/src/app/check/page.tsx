@@ -71,6 +71,7 @@ export default function CheckPage() {
         {result && (
           <ResultCard
             result={result}
+            report={{ org, who }}
             shareUrl={typeof window === 'undefined' ? undefined : `${window.location.origin}/check?org=${encodeURIComponent(org)}&who=${encodeURIComponent(who.trim())}`}
           />
         )}

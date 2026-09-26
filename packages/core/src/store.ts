@@ -42,6 +42,8 @@ export interface Report {
   id: string
   at: number
   org: string
+  /** impersonation: an account pretends to be the organisation or a member. compromised: an official (verified) member's account is being used by someone else. */
+  kind: 'impersonation' | 'compromised'
   subject: { telegramId?: string; username?: string; displayName?: string }
   note?: string
   /** how many times this account was reported (reports about the same account are merged) */
@@ -52,8 +54,8 @@ export interface Report {
 const MAX_REPORTS = 200
 const NOTE_MAX = 280
 const subjectKey = (s: Report['subject']) => (s.telegramId ? `id:${s.telegramId}` : s.username ? `u:${s.username.replace(/^@/, '').toLowerCase()}` : '')
-const newReport = (org: string, input: { subject: Report['subject']; note?: string }): Report => ({
-  id: randomBytes(6).toString('hex'), at: Date.now(), org, count: 1, status: 'pending',
+const newReport = (org: string, input: { subject: Report['subject']; note?: string; kind?: Report['kind'] }): Report => ({
+  id: randomBytes(6).toString('hex'), at: Date.now(), org, count: 1, status: 'pending', kind: input.kind ?? 'impersonation',
   subject: {
     ...(input.subject.telegramId ? { telegramId: input.subject.telegramId } : {}),
     ...(input.subject.username ? { username: input.subject.username.replace(/^@/, '').toLowerCase() } : {}),
@@ -108,7 +110,7 @@ export interface OrgScope {
   addAlert(a: Omit<Alert, 'id' | 'at' | 'org'> & { org?: string }): Promise<Alert>
   addOrgAdminChat(chatId: number): Promise<void>
   /** Report an account as impersonating this organisation. Reports about the same account (ID or @username) are merged. */
-  addReport(input: { subject: Report['subject']; note?: string }): Promise<Report>
+  addReport(input: { subject: Report['subject']; note?: string; kind?: Report['kind'] }): Promise<Report>
   /** newest first */
   reports(): Promise<Report[]>
   decideReport(id: string, status: 'confirmed' | 'dismissed'): Promise<Report | null>
@@ -206,7 +208,7 @@ export class JsonStore implements Store {
       addOrgAdminChat: async (chatId) => this.update((d) => void (this.admins(d, org).includes(chatId) || this.admins(d, org).push(chatId))),
       addReport: async (input) => this.update((d) => {
         const key = subjectKey(input.subject)
-        const same = key ? d.reports.find((r) => r.org === org && r.status !== 'dismissed' && subjectKey(r.subject) === key) : undefined
+        const same = key ? d.reports.find((r) => r.org === org && r.status !== 'dismissed' && (r.kind ?? 'impersonation') === (input.kind ?? 'impersonation') && subjectKey(r.subject) === key) : undefined
         if (same) { same.count += 1; return { ...same } }
         const r = newReport(org, input)
         d.reports.unshift(r)
@@ -234,7 +236,7 @@ export class JsonStore implements Store {
   removeMember(label: string) { return this.demo.removeMember(label) }
   addAlert(a: Omit<Alert, 'id' | 'at' | 'org'> & { org?: string }) { return this.forOrg(a.org ?? LEGACY_ORG).addAlert(a) }
   addOrgAdminChat(chatId: number) { return this.demo.addOrgAdminChat(chatId) }
-  addReport(input: { subject: Report['subject']; note?: string }) { return this.demo.addReport(input) }
+  addReport(input: { subject: Report['subject']; note?: string; kind?: Report['kind'] }) { return this.demo.addReport(input) }
   reports() { return this.demo.reports() }
   decideReport(id: string, status: 'confirmed' | 'dismissed') { return this.demo.decideReport(id, status) }
 
@@ -350,7 +352,7 @@ export class UpstashStore implements Store {
       addReport: async (input) => {
         const key = subjectKey(input.subject)
         const all = await this.hashValues<Report>(reportKey)
-        const same = key ? all.find((r) => r.status !== 'dismissed' && subjectKey(r.subject) === key) : undefined
+        const same = key ? all.find((r) => r.status !== 'dismissed' && (r.kind ?? 'impersonation') === (input.kind ?? 'impersonation') && subjectKey(r.subject) === key) : undefined
         if (same) { same.count += 1; await this.cmd('HSET', reportKey, same.id, JSON.stringify(same)); return same }
         const r = newReport(org, input)
         await this.cmd('HSET', reportKey, r.id, JSON.stringify(r))
@@ -381,7 +383,7 @@ export class UpstashStore implements Store {
   removeMember(label: string) { return this.demo.removeMember(label) }
   addAlert(a: Omit<Alert, 'id' | 'at' | 'org'> & { org?: string }) { return this.forOrg(a.org ?? LEGACY_ORG).addAlert(a) }
   addOrgAdminChat(chatId: number) { return this.demo.addOrgAdminChat(chatId) }
-  addReport(input: { subject: Report['subject']; note?: string }) { return this.demo.addReport(input) }
+  addReport(input: { subject: Report['subject']; note?: string; kind?: Report['kind'] }) { return this.demo.addReport(input) }
   reports() { return this.demo.reports() }
   decideReport(id: string, status: 'confirmed' | 'dismissed') { return this.demo.decideReport(id, status) }
 
@@ -439,4 +441,4 @@ export const usingUpstash = (env: Record<string, string | undefined> = process.e
 
 /** The accounts an organisation's admins confirmed as impersonators, in the shape the check engine takes. */
 export const confirmedImpersonators = (reports: Report[]) =>
-  reports.filter((r) => r.status === 'confirmed').map((r) => ({ ...r.subject, at: r.decidedAt ?? r.at, ...(r.note ? { note: r.note } : {}) }))
+  reports.filter((r) => r.status === 'confirmed' && (r.kind ?? 'impersonation') === 'impersonation').map((r) => ({ ...r.subject, at: r.decidedAt ?? r.at, ...(r.note ? { note: r.note } : {}) }))

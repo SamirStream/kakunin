@@ -19,6 +19,48 @@ const ADVICE: Record<string, string> = {
   unknown: 'Nothing on the project’s public team list backs this claim. Ask them to verify on Kakunin before you continue.',
 }
 
+/** Who to report from this result: the organisation being impersonated and what the person typed (an @username or a numeric ID). */
+export interface ReportTarget { org: string; who: string }
+
+function ReportBox({ target, kind }: { target: ReportTarget; kind: 'impersonation' | 'compromised' }) {
+  const [open, setOpen] = useState(false)
+  const [note, setNote] = useState('')
+  const [state, setState] = useState<'idle' | 'busy' | 'done'>('idle')
+  const [msg, setMsg] = useState<string | null>(null)
+  const w = target.who.trim().replace(/^@/, '')
+  const subject = /^\d{5,}$/.test(w) ? { telegramId: w } : { username: w }
+  const compromised = kind === 'compromised'
+  async function send() {
+    setState('busy'); setMsg(null)
+    try {
+      const res = await fetch('/api/report', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ org: target.org, kind, ...subject, note }) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message ?? data.error ?? `request failed (${res.status})`)
+      setState('done'); setMsg(data.message)
+    } catch (e) { setState('idle'); setMsg((e as Error).message) }
+  }
+  if (state === 'done') return <p className="rounded-lg px-3.5 py-2.5 text-[.84rem]" style={{ background: 'var(--ok-bg)', color: 'var(--ok)' }} role="status">{msg}</p>
+  return (
+    <div className="rounded-lg" style={{ border: '1px dashed var(--line)' }}>
+      {!open ? (
+        <button type="button" className="w-full px-3.5 py-2.5 text-left text-sm font-semibold underline" onClick={() => setOpen(true)}>
+          {compromised ? 'Does this account seem taken over? Tell the organisation' : 'Report this account as an impersonator'}
+        </button>
+      ) : (
+        <div className="space-y-2 px-3.5 py-3 text-sm">
+          <p style={{ color: 'var(--muted)' }}>
+            {compromised ? `Tell ${target.org} that this official account looks compromised. Its admins are alerted; nothing is published until they confirm.`
+              : `Tell ${target.org} that this account impersonates it. Its admins are alerted; nothing is published until they confirm.`}
+          </p>
+          <textarea className="input" rows={2} maxLength={280} placeholder="What did they say or ask? (optional)" value={note} onChange={(e) => setNote(e.target.value)} aria-label="What happened" />
+          {msg && <p className="text-xs" style={{ color: 'var(--bad)' }} role="alert">{msg}</p>}
+          <div className="flex gap-2"><button type="button" className="btn btn-primary !py-2" onClick={send} disabled={state === 'busy'}>{state === 'busy' ? 'Sending…' : 'Send report'}</button><button type="button" className="btn !py-2" onClick={() => setOpen(false)}>Cancel</button></div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export type ApiResult = CheckResult | { status: 'unknown'; org: string; reason: 'org-not-registered' }
 
 const explorer = (a: string) => `https://sepolia.etherscan.io/address/${a}`
@@ -43,12 +85,18 @@ function Row({ k, children }: { k: string; children: React.ReactNode }) {
   )
 }
 
-export function ResultCard({ result, shareUrl, compact = false }: { result: ApiResult; shareUrl?: string; compact?: boolean }) {
+export function ResultCard({ result, shareUrl, compact = false, report }: { result: ApiResult; shareUrl?: string; compact?: boolean; report?: ReportTarget }) {
   const notRegistered = result.status === 'unknown' && (result as { reason?: string }).reason === 'org-not-registered'
   const view = notRegistered
     ? { emoji: '', title: `${result.org} does not publish a team on Kakunin`, lines: ['Nothing to verify against: treat claims of working there as unverified.'] }
     : renderResult(result as CheckResult)
-  const tone = LABEL[result.status]
+  const r = result as CheckResult
+  const compromised = r.status === 'former' && !!r.compromised
+  const confirmed = r.status === 'lookalike' && !!r.confirmed
+  const tone = compromised ? { color: 'var(--bad)', label: 'Compromised account' } : confirmed ? { color: 'var(--bad)', label: 'Reported impersonator' } : LABEL[result.status]
+  const advice = compromised ? 'This official account was taken over. Do not trust anything it sends, even if it looks official. Reach the person through another channel you already trust.'
+    : confirmed ? 'The project confirmed this account is an impersonator. Do not reply or open anything: block it and report it in Telegram.' : ADVICE[result.status]
+  const canReport = !!report && !notRegistered && ((result.status === 'unknown' && !(result as { reason?: string }).reason) || (result.status === 'lookalike' && !confirmed))
   return (
     <div className="paper pop overflow-hidden" role="status" aria-live="polite">
       <div className="flex items-center gap-4 px-5 pb-3 pt-5">
@@ -64,7 +112,9 @@ export function ResultCard({ result, shareUrl, compact = false }: { result: ApiR
             <p key={i} className={i === 0 && result.status !== 'unknown' ? 'mono break-all' : ''}>{l}</p>
           ))}
         </div>
-        <p className="rounded-lg px-3.5 py-2.5 text-[.84rem]" style={{ background: 'var(--info-bg)', color: 'var(--info)' }}><b>What to do.</b> {ADVICE[result.status]}</p>
+        <p className="rounded-lg px-3.5 py-2.5 text-[.84rem]" style={{ background: 'var(--info-bg)', color: 'var(--info)' }}><b>What to do.</b> {advice}</p>
+        {canReport && <ReportBox target={report!} kind="impersonation" />}
+        {!!report && result.status === 'verified' && <ReportBox target={report} kind="compromised" />}
 
         {result.status === 'verified' && (
           <details className="rounded-lg" style={{ border: '1px solid var(--line)' }}>

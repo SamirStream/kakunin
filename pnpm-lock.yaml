@@ -188,6 +188,9 @@ importers:
 
   scripts:
     dependencies:
+      '@kakunin/core':
+        specifier: workspace:*
+        version: link:../packages/core
       dotenv:
         specifier: 18.0.3
         version: 18.0.3

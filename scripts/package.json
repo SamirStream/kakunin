@@ -5,10 +5,17 @@
   "type": "module",
   "dependencies": {
     "viem": "2.56.9",
-    "dotenv": "18.0.3"
+    "dotenv": "18.0.3",
+    "@kakunin/core": "workspace:*"
   },
   "devDependencies": {
     "tsx": "4.23.15",
     "@types/node": "22.15.0"
+  },
+  "scripts": {
+    "seed": "tsx seed-demo.ts",
+    "check": "tsx check.ts",
+    "add-member": "tsx add-member.ts",
+    "revoke-member": "tsx revoke-member.ts"
   }
 }

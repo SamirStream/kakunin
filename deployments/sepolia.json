@@ -9,5 +9,7 @@
   "teamResolver": "0x010E2B034f5a94b9F660A4eac40aEbfA4442226D",
   "orgWallet": "0x914066d4845a042dbb0CE6F2f0069Db75f0C1044",
   "hrWallet": "0x047323424d63D708755F7253ACe78bd7B241cD07",
-  "deployedAt": "2026-09-26"
+  "deployedAt": "2026-09-26",
+  "fromBlock": 11786072,
+  "universalResolver": "0x5d25c1d6acbb71b7a28aa7899618a3412a8303e3"
 }

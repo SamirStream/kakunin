@@ -51,3 +51,10 @@
   - Text records live on the resolver and are NOT cleared by unregister; a check must first confirm the subname is REGISTERED before trusting records/attestations.
   - The demo member `alice` is currently revoked by the spike; the seed script re-registers.
 - TODO M1: `setAddress(60, ORG)` for the org name on the org resolver so the org ENS name resolves to the attester signing address (required by the attestation validation step 6).
+
+## 2026-09-26 — M1: registry scripts (DONE)
+- `packages/core/src/ens.ts`: constants/roles, `getMemberState`, `readText`/`readAddress` **via UniversalResolverV2** (viem `universalResolverAddress` override works: `resolve(bytes,bytes)` has the v1 shape), `listMembers` (history from `LabelRegistered`/`LabelUnregistered` logs; former-member date = block timestamp of the unregistration; tokenId<->labelhash matched on canonical id = id>>32), writes `addMember`/`revokeMember`/`setMemberText`/`setAttesterAddress` (idempotent; every tx announced before sending; `dryRun`).
+- Scripts (`scripts/`): `seed-demo.ts` (idempotent, `--dry-run`), `add-member.ts`, `revoke-member.ts`, `check.ts`. Members are added **by the HR wallet**, org-only actions by ORG.
+- Verified on Sepolia: seed sent 7 txs (attester `addr(60)` of `kakunin-demo.eth` -> ORG; alice + bob re-registered by HR with `org.role`/`org.since`); a second run announces 0 txs. Reads through UR V2 return the records; `alice` showed as `former (revoked 2026-09-26T12:00:12Z)` before the re-seed, purely from events.
+- Note: text records survive unregistration on the resolver, but a revoked subname no longer resolves through the UR (registry no longer finds it) -> revoked names read as null. Checks still gate on registry state first.
+- `getLogs` range starts at `deployments/sepolia.json#fromBlock` (11786072); fine for the hackathon, would need pagination/indexer later (that is where MultiBaas/M5 comes in).

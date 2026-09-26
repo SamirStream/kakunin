@@ -4,7 +4,7 @@
 
 > Testnet only (Sepolia). No mainnet funds are ever used.
 
-**Live demo: <https://kakunin.xyz>** · try [a lookalike](https://kakunin.xyz/check?who=alice_kakunn), [the real Alice](https://kakunin.xyz/check?who=100000001), the [scripted demo](https://kakunin.xyz/demo?run=all) and the [org dashboard](https://kakunin.xyz/org/kakunin-demo.eth). Telegram bot: [@KakuninxyzBot](https://t.me/KakuninxyzBot).
+**Live: <https://kakunin.xyz>** · **[create your own organisation](https://kakunin.xyz/create)** (about 2 minutes, no gas) · try [a lookalike](https://kakunin.xyz/check?who=alice_kakunn), [the real Alice](https://kakunin.xyz/check?who=100000001), the [scripted demo](https://kakunin.xyz/demo?run=all) and the [sample org dashboard](https://kakunin.xyz/org/kakunin-demo.eth). Telegram: [Mini App](https://t.me/KakuninxyzBot/app) · [@KakuninxyzBot](https://t.me/KakuninxyzBot). Also: [status](https://kakunin.xyz/status), [API docs](https://kakunin.xyz/docs).
 
 ## The problem
 
@@ -77,9 +77,9 @@ Live against the Sepolia deployment at [kakunin.xyz](https://kakunin.xyz) (light
 |---|---|
 | ![Lookalike](docs/screenshots/check-lookalike.png) | ![Verified](docs/screenshots/check-verified.png) |
 
-| API docs |
-|---|
-| ![API docs](docs/screenshots/docs.png) |
+| Create your organisation (self-serve) | API docs |
+|---|---|
+| ![Create](docs/screenshots/create.png) | ![API docs](docs/screenshots/docs.png) |
 
 ## How ENSv2 is used (central, not cosmetic)
 
@@ -137,20 +137,21 @@ On-chain check afterwards: the agent went from 20 to 19.999 USDC and the org add
 
 ```mermaid
 flowchart LR
-  subgraph Chain[ENSv2 · Sepolia]
-    ORG[kakunin-demo.eth<br/>org registry]
-    TEAM[team.kakunin-demo.eth<br/>team registry]
+  subgraph Chain[ENSv2 · Sepolia · one set per organisation]
+    ORG[acme.eth<br/>org registry<br/>owned by the owner wallet]
+    TEAM[team.acme.eth<br/>team registry]
     RES[team resolver<br/>text + attestations]
     ORG --> TEAM --> RES
   end
-  HR[HR wallet<br/>EAC: register / revoke only] -->|register, unregister, setText| TEAM
-  OrgKey[Org key<br/>attester] -->|signs attestation| Bot
+  Owner[Owner wallet<br/>all roles · signs in the dashboard] -.->|signature, no gas| Web
+  HR[Operator key, sealed<br/>EAC: team registry only] -->|register, unregister, setText| TEAM
+  OrgKey[Operator as attester<br/>addr of acme.eth] -->|signs attestation| Bot
   Bot[Telegram bot<br/>grammY] -->|writes ID + attestation via HR| RES
   Victim((Victim)) -->|forward / @handle| Bot
   Victim -->|/check| Web[Next.js app]
   Web -->|Universal Resolver V2 + events| Chain
   Bot -->|Universal Resolver V2 + events| Chain
-  Bot --> Store[(JSON store<br/>invites · directory · alerts)]
+  Bot --> Store[(Upstash Redis<br/>per-org directory · alerts · admins · invites)]
   Web --> Store
   Bot -->|impersonation alert| Admin((Org admins))
 ```
@@ -158,10 +159,11 @@ flowchart LR
 ## Repo layout
 
 ```
-packages/core   ENS read/write helpers (viem), attestations, lookalike detection, check engine, store, tests
-apps/bot        Telegram bot (grammY)
-apps/web        Next.js app: /check, /org/<name> dashboard (wallet), /demo
-scripts         seed-demo, add-member, revoke-member, check, spike-ens (idempotent, --dry-run)
+packages/core   ENS helpers (viem), attestations, lookalike detection, check engine, multi-org store, provisioning state machine, wallet-signature auth, org resolver
+apps/bot        Telegram bot (grammY), serves every organisation
+apps/web        Next.js app: /create, /orgs, /org/<name> dashboard (wallet signature), /check, /demo, /docs, /tg Mini App, /status, API
+apps/paid-api   x402 seller, fake clone, agent screened by Intercepta
+scripts         provision (create an org from the CLI), e2e-http and create-org-http (live end-to-end), cloud-check, seed-demo, spike-ens (idempotent, --dry-run) ...
 deployments     Sepolia addresses
 specs           SPEC, DECISIONS (every decision and spike result, dated), PROMPTS
 ```
@@ -174,7 +176,8 @@ Requirements: Node 22, pnpm.
 pnpm install
 cp .env.example .env            # then: pnpm spike:wallets  (generates throwaway testnet keys into .env)
 # fund the printed ORG and HR addresses with Sepolia ETH (faucet)
-pnpm test                       # 100 tests
+pnpm test                       # 120 tests (core 98, bot 15, paid-api 7)
+pnpm provision acme 0xOwner…    # create a self-serve organisation from the CLI (same engine as /create)
 pnpm rehearse                   # replays the whole demo against the live chain, with assertions
 pnpm --filter @kakunin/scripts seed      # idempotent: attester address, members, attestations (add --dry-run to preview)
 pnpm --filter @kakunin/web build && pnpm --filter @kakunin/web start   # http://localhost:3000
@@ -190,10 +193,12 @@ The whole system deploys as one Vercel project (root directory `apps/web`): web 
 ## Status
 
 - ✅ ENSv2 registry + EAC delegation + attestations + check engine: **verified live on Sepolia**
-- ✅ Web app (`/check`, `/org` dashboard, `/demo`), tested against the live chain
-- ✅ Telegram bot logic (onboarding, forwarded messages, alerts): unit-tested; live run needs a bot token
+- ✅ **Self-serve organisations**: created through the public API and the /create wizard on kakunin.xyz (about 150 s); the full flow (create, add, Telegram onboarding, verify, alert, revoke) is tested live by `scripts/e2e-http.ts`
+- ✅ Web app (`/create`, `/orgs`, `/org/<name>`, `/check`, `/demo`, `/docs`, `/status`), deployed on Vercel with Upstash
+- ✅ Telegram bot (webhook) and Mini App: unit-tested, and exercised through signed initData on the live API; not yet screen-tested by the builder in the Telegram client
 - ✅ x402 paid check + agent screened by the live Intercepta API (one payment approved, one blocked): tested on Base Sepolia
-- ⏳ Curvegrid MultiBaas indexing: not done, see `specs/DECISIONS.md`
+- ⏳ Curvegrid MultiBaas indexing: deliberately not pursued, see `specs/DECISIONS.md`
+- ⏳ Mainnet: ENSv2 is beta on Sepolia; the design is chain-agnostic
 
 ## Security
 

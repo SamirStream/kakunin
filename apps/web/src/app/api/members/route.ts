@@ -22,8 +22,8 @@ export async function GET(req: Request) {
       }),
     )
   })
-  // @usernames live in Kakunin's off-chain directory: only the reference (sandbox) org and signed-in admins see them.
-  const seeUsernames = ctx.demo || (await hasAdminSession(req, ctx))
+  // @usernames live in Kakunin's off-chain directory: only signed-in admins see them (Telegram IDs are already public on-chain).
+  const seeUsernames = await hasAdminSession(req, ctx)
   return json({
     org: ctx.name, team: ctx.d.teamName, owner: ctx.d.orgWallet, operator: ctx.record?.operator ?? null, demo: ctx.demo,
     teamRegistry: ctx.d.teamRegistry, createdAt: ctx.record?.createdAt ?? null,

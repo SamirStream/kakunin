@@ -1,5 +1,119 @@
 # Kakunin (確認)
-Verify that a "recruiter" really belongs to a Web3 project — via an ENSv2 team registry. ETHGlobal Tokyo 2026.
+
+**Verify that a "recruiter" really belongs to a Web3 project, using an ENSv2 team registry and signed attestations.** ETHGlobal Tokyo 2026.
+
+> Testnet only (Sepolia). No mainnet funds are ever used.
+
+## The problem
+
+Impersonation is the #1 social-engineering vector in Web3. Scammers pose as recruiters or team members of real projects on Telegram, X and LinkedIn, then get victims to run malware or sign transactions. On 18 Sept 2026 Japan's National Police Agency, with the FBI and Australian/German agencies, published a joint advisory on **WaterPlum / "Contagious Interview"** (North Korea): 30,000+ devices infected in 100+ countries, 7,000+ wallets drained, about 1.7B JPY moved to the DPRK. Every infection started with a fake recruiter conversation.
+
+Today the only defense is "be careful", and takedown tools chase an infinite list of fakes. **Kakunin certifies the real ones**: a finite, verifiable list that each project publishes on ENSv2.
+
+## What it does
+
+A check returns one of four answers:
+
+| | Meaning |
+|---|---|
+| ✅ **Verified member** | Active subname in the org's team registry **and** a valid attestation signed by the org's own ENS name |
+| 🕓 **Former member** | HR revoked the subname; the revocation date is derived from ENSv2 events |
+| ⚠️ **Lookalike** | Handle / display name imitates a real member (NFKC, confusables, Levenshtein) |
+| ❓ **Unknown** | The org publishes its team and this person is not in it |
+
+Every failed check that claims an org raises an **impersonation alert** for that org (dashboard feed + Telegram).
+
+Three sides:
+
+- **Project (org):** owns `kakunin-demo.eth`; the team lives in its own registry `team.kakunin-demo.eth`. An **HR wallet** registers/revokes members through ENSv2 Enhanced Access Control **without controlling the root name**.
+- **Member:** HR adds them, the app produces a one-time Telegram deep link, the member opens it from their own account; the bot captures the **numeric Telegram user ID** (never the mutable @username as identity) and the org attests it on ENS. No wallet needed for members.
+- **Victim (free, public):** forward a suspicious message to the bot, or use the `/check` web page.
+
+## How ENSv2 is used (central, not cosmetic)
+
+| ENSv2 feature | Role in Kakunin | Code |
+|---|---|---|
+| **Hierarchical registries** (`UserRegistry` proxies via `VerifiableFactory`) | `kakunin-demo.eth` → `team.kakunin-demo.eth` → `alice.team.kakunin-demo.eth`; each level is its own registry | [`scripts/spike-ens.ts`](scripts/spike-ens.ts), [`packages/core/src/ens.ts`](packages/core/src/ens.ts) |
+| **Enhanced Access Control** | HR gets `REGISTRAR｜UNREGISTER｜RENEW` on the **team registry root only** and `SET_TEXT` on the **team resolver only**. On-chain checks show HR cannot unregister `team`, change resolvers, or edit org records | [`/api/delegation`](apps/web/src/app/api/delegation/route.ts), dashboard panel |
+| **Permissioned Resolver** (per-account, per-record roles) | A separate resolver for the team so HR's write permission never touches the org's own records | [`ens.ts`](packages/core/src/ens.ts) |
+| **Universal Resolver V2** | All reads (`text`, `addr`) go through it, the way any ENSv2 client resolves | [`readText` / `readAddress`](packages/core/src/ens.ts) |
+| **Registry events** (`LabelRegistered` / `LabelUnregistered`) | An unregistered name disappears from state, so "former member since …" comes from events and block timestamps | [`listMembers`](packages/core/src/ens.ts) |
+| **Text records + draft ENSIP "Text Record Attestations"** ([PR #85](https://github.com/ensdomains/ensips/pull/85)) | The org's ENS name is the attester. Attestation lives at `attestations[org.telegram.id][kakunin-demo.eth]`; if the record, the owner or the attester key changes, it stops verifying | [`attestation.ts`](packages/core/src/attestation.ts) |
+
+Attestation format: DAG-CBOR payload `{n,a,k,v,t}`, EIP-191 over `keccak256(payload)`, envelope `Tag(0x61747374)[version, t, sig]`. Our tests reproduce **byte for byte a real mainnet attestation** validated by the atst.me reference verifier (`jkm.eth`, attested by `atst.lighthousegov.eth`). We issue the draft-PR layout (v1) and verify both it and the deployed playground layout (v2). Details and the discrepancy we found are in [`specs/DECISIONS.md`](specs/DECISIONS.md).
+
+### Deployed on Sepolia
+
+See [`deployments/sepolia.json`](deployments/sepolia.json): `kakunin-demo.eth`, org registry, team registry, two resolvers (ENSv2 contract addresses are in `specs/DECISIONS.md`).
+
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph Chain[ENSv2 · Sepolia]
+    ORG[kakunin-demo.eth<br/>org registry]
+    TEAM[team.kakunin-demo.eth<br/>team registry]
+    RES[team resolver<br/>text + attestations]
+    ORG --> TEAM --> RES
+  end
+  HR[HR wallet<br/>EAC: register / revoke only] -->|register, unregister, setText| TEAM
+  OrgKey[Org key<br/>attester] -->|signs attestation| Bot
+  Bot[Telegram bot<br/>grammY] -->|writes ID + attestation via HR| RES
+  Victim((Victim)) -->|forward / @handle| Bot
+  Victim -->|/check| Web[Next.js app]
+  Web -->|Universal Resolver V2 + events| Chain
+  Bot -->|Universal Resolver V2 + events| Chain
+  Bot --> Store[(JSON store<br/>invites · directory · alerts)]
+  Web --> Store
+  Bot -->|impersonation alert| Admin((Org admins))
+```
+
+## Repo layout
+
+```
+packages/core   ENS read/write helpers (viem), attestations, lookalike detection, check engine, store, tests
+apps/bot        Telegram bot (grammY)
+apps/web        Next.js app: /check, /org/<name> dashboard (wallet), /demo
+scripts         seed-demo, add-member, revoke-member, check, spike-ens (idempotent, --dry-run)
+deployments     Sepolia addresses
+specs           SPEC, DECISIONS (every decision and spike result, dated), PROMPTS
+```
+
+## Run it
+
+Requirements: Node 22, pnpm.
+
+```bash
+pnpm install
+cp .env.example .env            # then: pnpm spike:wallets  (generates throwaway testnet keys into .env)
+# fund the printed ORG and HR addresses with Sepolia ETH (faucet)
+pnpm test                       # 47 tests
+pnpm --filter @kakunin/scripts seed      # idempotent: attester address, members, attestations (add --dry-run to preview)
+pnpm --filter @kakunin/web build && pnpm --filter @kakunin/web start   # http://localhost:3000
+pnpm --filter @kakunin/bot dev           # needs TELEGRAM_BOT_TOKEN (BotFather) in .env
+```
+
+Every on-chain script announces network, contract, function and arguments **before** sending. `KAKUNIN_DEMO_SIGNER=1` (localhost only) lets `/demo` revoke and reset with the throwaway keys.
+
+## Status
+
+- ✅ ENSv2 registry + EAC delegation + attestations + check engine: **verified live on Sepolia**
+- ✅ Web app (`/check`, `/org` dashboard, `/demo`), tested against the live chain
+- ✅ Telegram bot logic (onboarding, forwarded messages, alerts): unit-tested; live run needs a bot token
+- ⏳ Curvegrid MultiBaas indexing, Intercepta/x402: see `specs/DECISIONS.md`
 
 ## AI attribution
-- Scaffolding, specs and code are written with Claude Code (Anthropic) under the builder's direction. Details in `specs/PROMPTS.md`.
+
+This project is built by the team **with** AI assistance, as allowed by the event rules. Specs and prompts are in the repo ([`specs/`](specs/)).
+
+- **Claude Code (Anthropic, Claude Sonnet 5)** wrote most of the code, tests and docs in this repository under the builder's direction: `packages/core`, `apps/bot`, `apps/web`, `scripts`, the specs and this README. Each commit carries a `Co-Authored-By: Claude` trailer.
+- **Human contribution (the builder):** product concept and scope, all sponsor/prize strategy decisions, the decision to drop MTProto in favour of an own-registry username lookup, the EAC delegation design choices (org owns subnames; HR limited to the team registry), wallet funding and testnet operations, review and go/no-go on every on-chain action.
+- ENSv2 contract facts were taken from docs.ens.domains and verified ABIs (Blockscout), not guessed; see `specs/DECISIONS.md`.
+
+## Team
+
+Samir: builder (GitHub [@SamirStream](https://github.com/SamirStream)).
+
+## License
+
+MIT

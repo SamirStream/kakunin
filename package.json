@@ -7,7 +7,12 @@
   "scripts": {
     "test": "pnpm -r --if-present test",
     "spike:wallets": "pnpm --filter @kakunin/scripts exec tsx gen-wallets.ts",
-    "spike:ens": "pnpm --filter @kakunin/scripts exec tsx spike-ens.ts"
+    "spike:ens": "pnpm --filter @kakunin/scripts exec tsx spike-ens.ts",
+    "seed": "pnpm --filter @kakunin/scripts seed",
+    "demo:revoke-bob": "pnpm --filter @kakunin/scripts revoke-member bob",
+    "check": "pnpm --filter @kakunin/scripts check",
+    "bot": "pnpm --filter @kakunin/bot dev",
+    "web": "pnpm --filter @kakunin/web build && pnpm --filter @kakunin/web start"
   },
   "devDependencies": {
     "typescript": "5.9.3"

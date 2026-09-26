@@ -1,8 +1,8 @@
 import { createWalletClient, http, type Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { sepolia } from 'viem/chains'
-import { revokeDemoMember, seedDemo } from '@kakunin/core'
-import { invalidate, json, pub } from '@/lib/server'
+import { DEMO_MEMBERS, revokeDemoMember, seedDemo } from '@kakunin/core'
+import { invalidate, json, pub, store } from '@/lib/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,7 +20,10 @@ export async function POST(req: Request) {
   const { action, label } = (await req.json().catch(() => ({}))) as { action?: string; label?: string }
   const hr = ctx('HR_PRIVATE_KEY')
   if (action === 'revoke' && label) await revokeDemoMember(hr, label)
-  else if (action === 'reset') await seedDemo(ctx('ORG_PRIVATE_KEY'), hr)
+  else if (action === 'reset') {
+    await seedDemo(ctx('ORG_PRIVATE_KEY'), hr)
+    for (const m of DEMO_MEMBERS) store.upsertMember({ label: m.label, telegramId: m.telegramId, username: m.username, displayName: m.displayName })
+  }
   else return json({ error: 'unknown action' }, 400)
   invalidate('members')
   return json({ ok: true, action, label })

@@ -105,6 +105,7 @@ Kakunin's check is also sold per call over **x402** (0.001 USDC, Base Sepolia). 
 | What | File |
 |---|---|
 | **Live Intercepta call** (`GET api.web3antivirus.io/api/public/v2/extension/account/{address}/quick-scan`, `x-api-key`) | [`apps/paid-api/src/screener.ts`](apps/paid-api/src/screener.ts) |
+| **Live Intercepta token call** (`GET …/extension/token-intelligence/token/{address}/risks?chainId=…`, "Scan Token"): a second opinion on the payment token where the API covers the network (mainnets). Base Sepolia, where our demo pays, is not covered, so there the allowlist alone decides; try `pnpm --filter @kakunin/paid-api probe token` | [`apps/paid-api/src/screener.ts`](apps/paid-api/src/screener.ts) (`rawTokenScan`, `tokenVerdictFromResponse`) |
 | Hook that screens `payTo` **before signing** (x402 `onBeforePaymentCreation`) and aborts on a bad verdict | [`apps/paid-api/src/agent.ts`](apps/paid-api/src/agent.ts) |
 | Decision policy: refuse lookalike tokens, spending limits, refuse high-risk `payTo`, ask a human on medium/unknown, **fail closed** if screening errors | [`packages/core/src/screening.ts`](packages/core/src/screening.ts) |
 | Paid API (seller) and a FAKE clone whose `payTo` is a flagged address | [`apps/paid-api/src/server.ts`](apps/paid-api/src/server.ts) |
@@ -139,11 +140,11 @@ On-chain check afterwards: the agent went from 20 to 19.999 USDC and the org add
 
 | Policy rule (what the agent does before signing) | Where |
 |---|---|
-| Refuse a **lookalike token**: only the canonical USDC contract per network is accepted, whatever the server advertises | [`POLICY.trustedAssets`](apps/paid-api/src/agent.ts#L16-L24), [`decidePayment`](packages/core/src/screening.ts#L49) |
+| Refuse a **lookalike token**: only the canonical USDC contract per network is accepted, whatever the server advertises (allowlist), plus Intercepta Scan Token on covered mainnets | [`POLICY.trustedAssets`](apps/paid-api/src/agent.ts#L16-L24), [`decidePayment`](packages/core/src/screening.ts#L67) |
 | **Spending limits**: hard stop at $0.05, a human must approve above $0.01 | [`POLICY`](apps/paid-api/src/agent.ts#L16-L24) |
-| **Screen the counterparty** with the live Intercepta API (no mock) and refuse high or critical risk, ask a human on medium or unknown | [`screener.ts`](apps/paid-api/src/screener.ts), [`decidePayment`](packages/core/src/screening.ts#L49) |
-| **Fail closed**: a screening error never pays automatically; an unattended agent treats "ask a human" as a refusal | [`agent.ts#L45-L54`](apps/paid-api/src/agent.ts#L45-L54) |
-| Runs **before** the payment is created, through the x402 SDK hook | [`onBeforePaymentCreation`](apps/paid-api/src/agent.ts#L45) |
+| **Screen the counterparty** with the live Intercepta API (no mock) and refuse high or critical risk, ask a human on medium or unknown | [`screener.ts`](apps/paid-api/src/screener.ts), [`decidePayment`](packages/core/src/screening.ts#L67) |
+| **Fail closed**: a screening error never pays automatically; an unattended agent treats "ask a human" as a refusal | [`agent.ts#L47-L61`](apps/paid-api/src/agent.ts#L47-L61) |
+| Runs **before** the payment is created, through the x402 SDK hook | [`onBeforePaymentCreation`](apps/paid-api/src/agent.ts#L47) |
 
 The agent is also a **product surface**: the same engine backs `/demo` (button **Run agent purchases**), and the check it buys is Kakunin's own. **MultiBaas was not used** in this project, so there is no MultiBaas feedback to give; the prize is judged on idea and execution.
 

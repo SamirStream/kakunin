@@ -133,6 +133,22 @@ On-chain check afterwards: the agent went from 20 to 19.999 USDC and the org add
 - Nice: per-trait reasons (`sanction_address`, `known_scammer`, `blacklist`) are directly displayable to a person, and latency was about 1 second.
 - Wish: a documented list of test addresses per risk class in the docs, not only in the chat channel.
 
+## Curvegrid: Best AI Agent Project
+
+**One sentence:** Kakunin's buying agent is a policy-aware transaction agent for agent-to-agent payments: before it signs an x402 payment it checks the token, the amount and the counterparty against a written policy and a live risk API, and it pays, refuses or asks a human, failing closed whenever it is unsure.
+
+| Policy rule (what the agent does before signing) | Where |
+|---|---|
+| Refuse a **lookalike token**: only the canonical USDC contract per network is accepted, whatever the server advertises | [`POLICY.trustedAssets`](apps/paid-api/src/agent.ts#L16-L24), [`decidePayment`](packages/core/src/screening.ts#L49) |
+| **Spending limits**: hard stop at $0.05, a human must approve above $0.01 | [`POLICY`](apps/paid-api/src/agent.ts#L16-L24) |
+| **Screen the counterparty** with the live Intercepta API (no mock) and refuse high or critical risk, ask a human on medium or unknown | [`screener.ts`](apps/paid-api/src/screener.ts), [`decidePayment`](packages/core/src/screening.ts#L49) |
+| **Fail closed**: a screening error never pays automatically; an unattended agent treats "ask a human" as a refusal | [`agent.ts#L45-L54`](apps/paid-api/src/agent.ts#L45-L54) |
+| Runs **before** the payment is created, through the x402 SDK hook | [`onBeforePaymentCreation`](apps/paid-api/src/agent.ts#L45) |
+
+The agent is also a **product surface**: the same engine backs `/demo` (button **Run agent purchases**), and the check it buys is Kakunin's own. **MultiBaas was not used** in this project, so there is no MultiBaas feedback to give; the prize is judged on idea and execution.
+
+How to run and test it: see [Run it](#run-it) below (`pnpm test` covers the policy in [`screening.test.ts`](packages/core/test/screening.test.ts) and the Intercepta mapping in [`screener.test.ts`](apps/paid-api/test/screener.test.ts); `pnpm paid` then `pnpm agent` runs the two purchases).
+
 ## Architecture
 
 ```mermaid
@@ -184,6 +200,14 @@ pnpm --filter @kakunin/web build && pnpm --filter @kakunin/web start   # http://
 pnpm --filter @kakunin/bot dev           # needs TELEGRAM_BOT_TOKEN (BotFather) in .env
 ```
 
+**Test the agent** (needs `INTERCEPTA_API_KEY` from https://intercepta.io/ethglobal and `AGENT_PRIVATE_KEY` funded with Base Sepolia USDC from https://faucet.circle.com):
+
+```bash
+pnpm paid     # x402 seller on :4021 and a FAKE clone on :4022
+pnpm agent    # two purchases, each screened before signing: one paid, one blocked, with the reason printed
+pnpm cloud:check https://kakunin.xyz --agent   # the same against the live deployment (spends 0.002 testnet USDC)
+```
+
 The 4-minute demo script and Q&A cheat sheet are in [`docs/DEMO.md`](docs/DEMO.md). Every on-chain script announces network, contract, function and arguments **before** sending. `KAKUNIN_DEMO_SIGNER=1` (localhost only) lets `/demo` revoke and reset with the throwaway keys.
 
 ## Hosted demo (Vercel): everything runs in the cloud
@@ -197,7 +221,7 @@ The whole system deploys as one Vercel project (root directory `apps/web`): web 
 - ✅ Web app (`/create`, `/orgs`, `/org/<name>`, `/check`, `/demo`, `/docs`, `/status`), deployed on Vercel with Upstash
 - ✅ Telegram bot (webhook) and Mini App: unit-tested, and exercised through signed initData on the live API; not yet screen-tested by the builder in the Telegram client
 - ✅ x402 paid check + agent screened by the live Intercepta API (one payment approved, one blocked): tested on Base Sepolia
-- ⏳ Curvegrid MultiBaas indexing: deliberately not pursued, see `specs/DECISIONS.md`
+- ✅ Policy-aware x402 buyer agent (Curvegrid track): see the section above. MultiBaas is not used
 - ⏳ Mainnet: ENSv2 is beta on Sepolia; the design is chain-agnostic
 
 ## Security
@@ -214,7 +238,12 @@ This project is built by the team **with** AI assistance, as allowed by the even
 
 ## Team
 
-**Samir Touinssi**, CEO of [The Arch](https://thearch.consulting): builder (GitHub [@SamirStream](https://github.com/SamirStream)).
+**Samir Touinssi**, CEO of [The Arch](https://thearch.consulting). Solo builder.
+
+- X: <https://x.com/SamirTouin>
+- LinkedIn: <https://www.linkedin.com/in/tsamir/>
+- GitHub: <https://github.com/SamirStream>
+- All links: <https://linktr.ee/SamirTouin>
 
 ## License
 

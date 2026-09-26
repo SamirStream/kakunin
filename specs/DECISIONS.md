@@ -142,3 +142,9 @@ target
 issued` (5 min per action, 1 h for a read-only session). No cookies, no server sessions.
 - **Bot semantics**: unnamed checks look in every org; alerts go to an org only if the person is its former member or a lookalike of its members (unknown people would otherwise spam every org).
 - **Verified on the cloud**: `scripts/create-org-http.ts` created an organisation through the public API on kakunin.xyz in 155 s, and `scripts/e2e-http.ts` passed 24/24 against it (including a real attestation written from a signed Telegram initData in 33 s).
+
+## 2026-09-27 — Third prize track: Curvegrid "Best AI Agent Project" (decided by the builder)
+
+- The builder applies to three tracks: ENS (Best Use of ENSv2), Intercepta (Safe Agent-to-Agent Payments with x402) and Curvegrid (Best AI Agent Project). This **reverses** the 2026-09-26 decision to leave Curvegrid alone: the track does not require MultiBaas (judged on idea and execution), and the x402 buyer agent already is a policy-aware transaction agent.
+- **Honest position:** MultiBaas is NOT used anywhere in the repo. The README says so and gives no MultiBaas feedback. The Curvegrid README items are covered by: the one-sentence summary, the section "Curvegrid: Best AI Agent Project" (policy, files, setup and testing), the team block with social handles, and the run/test instructions.
+- The prize page (ethglobal.com/events/tokyo2026/prizes) was re-read on 2026-09-27: the Curvegrid README list is summary, team and handles, setup and testing, and MultiBaas experience only if used.

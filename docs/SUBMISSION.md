@@ -61,7 +61,12 @@ Kakunin was built with Claude Code (Anthropic) writing most of the code, tests a
 
 ## Team
 
-Samir Touinssi, CEO of The Arch (thearch.consulting). Solo.
+**Samir Touinssi**, CEO of [The Arch](https://thearch.consulting). Solo builder.
+
+- X: <https://x.com/SamirTouin>
+- LinkedIn: <https://www.linkedin.com/in/tsamir/>
+- GitHub: <https://github.com/SamirStream>
+- All links: <https://linktr.ee/SamirTouin>
 
 ## Hard questions, ready answers
 

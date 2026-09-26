@@ -2,6 +2,7 @@
 // (and the token, and the amount) and lets the verdict decide: pay, refuse, or ask a human.
 //   pnpm --filter @kakunin/paid-api agent
 import { config } from 'dotenv'
+import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { privateKeyToAccount } from 'viem/accounts'
 import { x402Client } from '@x402/core/client'
@@ -74,7 +75,8 @@ const show = (r: BuyResult) => {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
-  config({ path: fileURLToPath(new URL('../../../.env', import.meta.url)), quiet: true })
+  // (not `new URL('…', import.meta.url)`: webpack would try to bundle that file when the web app imports this module)
+  config({ path: resolve(dirname(fileURLToPath(import.meta.url)), '../../../.env'), quiet: true })
   const pk = process.env.AGENT_PRIVATE_KEY
   if (!pk || !/^0x[0-9a-fA-F]{64}$/.test(pk)) throw new Error('AGENT_PRIVATE_KEY missing in .env (run pnpm spike:wallets, then fund the agent with Base Sepolia USDC)')
   const buy = makeAgent({ signer: privateKeyToAccount(pk as `0x${string}`), screener: getScreener() })

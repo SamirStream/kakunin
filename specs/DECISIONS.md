@@ -95,3 +95,6 @@
 
 ## 2026-09-26 — Security review (see docs/SECURITY.md)
 - Found and fixed a critical flaw in my own M4 work: `/api/invite` was unauthenticated (anyone could obtain an invite for an existing member and get their own Telegram ID attested on that subname). Invites now need an HR/ORG wallet signature (5 min, bound to org+member). Also: demo signer routes refuse proxied requests and the web binds to 127.0.0.1; rate limits on web and bot; postcss pinned (audit clean); secrets scan of all commits clean. 70 tests (52 core, 7 paid-api, 11 bot).
+
+## 2026-09-26 — Vercel deployment fixes
+- First Vercel build failed: `apps/paid-api/src/agent.ts` used `new URL('../../../.env', import.meta.url)`, which webpack tries to bundle (the file exists locally, not on Vercel). Replaced with a runtime `path.resolve`. Also: the demo directory is now imported as JSON (bundled) instead of read with fs, and the store falls back to `/tmp` when `VERCEL` is set (read-only filesystem). Verified by building without `.env` and running with `VERCEL=1`. Demo signer stays disabled on hosted deployments by design.

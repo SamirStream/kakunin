@@ -143,6 +143,12 @@ pnpm --filter @kakunin/bot dev           # needs TELEGRAM_BOT_TOKEN (BotFather) 
 
 The 4-minute demo script and Q&A cheat sheet are in [`docs/DEMO.md`](docs/DEMO.md). Every on-chain script announces network, contract, function and arguments **before** sending. `KAKUNIN_DEMO_SIGNER=1` (localhost only) lets `/demo` revoke and reset with the throwaway keys.
 
+## Hosted demo (Vercel)
+
+The web app deploys as-is: **Root Directory `apps/web`**, framework Next.js, pnpm. Environment variables: `SEPOLIA_RPC_URL` (recommended: an Alchemy/Infura Sepolia URL) and `TELEGRAM_BOT_USERNAME=KakuninxyzBot`. **Do not set `KAKUNIN_DEMO_SIGNER`** on a public host.
+
+On the hosted site everything that only reads ENSv2 works (`/check`, the four read-only scenarios of `/demo`, the live member list and EAC delegation panel, and wallet-signed actions in `/org` with a connected HR wallet). The one-click server-side buttons (HR revoke/reset, agent purchases) and the Telegram bot need the local setup above. On Vercel the alerts store lives in `/tmp` (per instance, ephemeral) and the directory falls back to the bundled demo members.
+
 ## Status
 
 - ✅ ENSv2 registry + EAC delegation + attestations + check engine: **verified live on Sepolia**

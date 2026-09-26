@@ -12,7 +12,7 @@ Scope: whole repo, reviewed by the AI assistant under the builder's direction, p
 | 4 | 4 advisories in `postcss` (2 high, 2 moderate), pulled in by Next.js; only relevant when processing untrusted CSS (we do not). | Low in practice | **Fixed** with a pinned override (8.5.28). `pnpm audit --prod`: no known vulnerabilities. |
 | 5 | Secrets in git. | - | **Clean.** Every secret in `.env` (3 wallet keys, bot token, admin secret, Intercepta key) was searched across ALL commits: none found. `.env`, `data/`, `scripts/state.sepolia.json` are ignored. |
 
-| 6 | Cloud mode adds public attack surface: a Telegram webhook, server-side demo actions and the agent demo on a public host. | Medium | **Mitigated.** Webhook requires the secret header (); revoke/reset need  plus a constant-time-compared admin token (proxied "localhost" requests get no free pass); the public agent demo is rate limited (3 / 10 min per client, 150 / day); single-use invites are consumed atomically (). Unit-tested in . |
+| 6 | Cloud mode adds public attack surface: a Telegram webhook, server-side demo actions and the agent demo on a public host. | Medium | **Mitigated.** Webhook requires the secret header (`TELEGRAM_WEBHOOK_SECRET`); revoke/reset need `KAKUNIN_DEMO_SIGNER=1` plus a constant-time-compared admin token (proxied "localhost" requests get no free pass); the public agent demo is rate limited (3 / 10 min per client, 150 / day); single-use invites are consumed atomically (`GETDEL`). Unit-tested in `packages/core/test/access.test.ts`. |
 
 ## Design properties worth keeping
 

@@ -39,3 +39,15 @@
 
 ## 2026-09-26 — Clock
 - Builder is in Tokyo; machine clock is JST. Deadline Sun 2026-09-27 09:00 JST. At 11:55 JST Sat: ~21h left.
+
+## 2026-09-26 — M0 spike 1: ENSv2 Sepolia registry + EAC + HR delegation (RESULT: OK, all txs succeeded)
+- Script: `scripts/spike-ens.ts` (dry-run by default, `--send` to execute, idempotent via `scripts/state.sepolia.json`, gitignored). Public record of addresses: `deployments/sepolia.json`.
+- Done on-chain: `kakunin-demo.eth` registered (8.000021 MockUSDC; `MockUSDC.mint` is public/free; ETHRegistrar accepts it), org UserRegistry `0x87a9cCF3826fF5Bd06558d27E377D7c313D69FB3` set as its subregistry at registration, `team` registered inside it pointing at team UserRegistry `0x40C390A61baf66cA6b56B521Be95432FDDC2867f`; org resolver `0x9a11…6a40`, team resolver `0x010E…226D` (both PermissionedResolver proxies via VerifiableFactory).
+- EAC delegation proven: ORG granted HR `ROLE_REGISTRAR|UNREGISTER|RENEW` on the team registry ROOT (`grantRootRoles(69633, hr)`), HR holds only `ROLE_SET_TEXT` on the team resolver. HR successfully `register`ed `alice`, `setText(org.role)`, `unregister`ed `alice`. HR `unregister("team")` and `setResolver` on the ORG registry both **revert** (simulated) -> HR cannot touch the org root name.
+- Findings that shape M1+:
+  - `UserRegistry.register(label, owner, registry, resolver, roleBitmap, expiry)`: `owner=ORG` with `roleBitmap=0` works (org owns members, members hold no roles); expiry may equal the parent's expiry (no error).
+  - Text read: `resolver.resolve(dnsEncodedName, abi.encode(text(node,key)))` returns an ABI-encoded string (works; "Engineer" read back). Reading through the **UniversalResolverV2** with viem is NOT yet tested -> first task of M1 (fallback: call the team resolver directly).
+  - After `unregister`, `getState(labelhash)` = status 0 (AVAILABLE), expiry = unregister block time, latestOwner = 0x0. The old member is gone from state -> "former member since <date>" MUST come from `LabelUnregistered`/`LabelRegistered` events (block timestamps). Registry lookups must use the **labelhash**, not tokenId (tokenId changes on role changes/re-registration).
+  - Text records live on the resolver and are NOT cleared by unregister; a check must first confirm the subname is REGISTERED before trusting records/attestations.
+  - The demo member `alice` is currently revoked by the spike; the seed script re-registers.
+- TODO M1: `setAddress(60, ORG)` for the org name on the org resolver so the org ENS name resolves to the attester signing address (required by the attestation validation step 6).

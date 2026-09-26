@@ -1,0 +1,13 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "orgName": "kakunin-demo.eth",
+  "teamName": "team.kakunin-demo.eth",
+  "orgRegistry": "0x87a9cCF3826fF5Bd06558d27E377D7c313D69FB3",
+  "teamRegistry": "0x40C390A61baf66cA6b56B521Be95432FDDC2867f",
+  "orgResolver": "0x9a11A3c5E8201d82C3de9d54A16d80AAC3bC6a40",
+  "teamResolver": "0x010E2B034f5a94b9F660A4eac40aEbfA4442226D",
+  "orgWallet": "0x914066d4845a042dbb0CE6F2f0069Db75f0C1044",
+  "hrWallet": "0x047323424d63D708755F7253ACe78bd7B241cD07",
+  "deployedAt": "2026-09-26"
+}

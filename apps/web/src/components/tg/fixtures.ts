@@ -4,11 +4,17 @@ import type { CheckResult } from '@kakunin/core'
 export interface Me {
   user: { id: number; name: string; username: string | null; photo: string | null }
   admin: boolean
+  /** organisations this account administers, and every organisation Kakunin knows */
+  adminOf?: string[]
+  orgs?: string[]
   startParam: string | null
   result: CheckResult
+  /** verified or former memberships across organisations */
+  memberships?: CheckResult[]
 }
 export interface AdminData {
   org: string
+  adminOf?: string[]
   members: { label: string; fqn: string; status: 'active' | 'former'; role: string | null; since: string | null; telegramId: string | null; username: string | null }[]
   alerts: { id: string; at: number; kind: string; detail: string }[]
   stats: { active: number; revoked: number; attested: number; alerts24h: number }

@@ -1,6 +1,6 @@
 import { checkIdentity, type CheckResult } from '@kakunin/core'
 import { limited } from '@/lib/guard'
-import { getDirectory, json, org, reader, store } from '@/lib/server'
+import { getDirectory, getOrg, json } from '@/lib/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,12 +9,11 @@ export async function POST(req: Request) {
   const blocked = limited(req, 'check', 30)
   if (blocked) return blocked
   const body = (await req.json().catch(() => ({}))) as { org?: string; telegramId?: string; username?: string; displayName?: string }
-  const claimed = (body.org ?? org).trim().toLowerCase()
-  if (claimed !== org)
-    return json({ status: 'unknown', org: claimed, reason: 'org-not-registered' }, 200)
+  const ctx = await getOrg(body.org)
+  if (!ctx) return json({ status: 'unknown', org: (body.org ?? '').trim().toLowerCase(), reason: 'org-not-registered' }, 200)
   const input = { telegramId: body.telegramId?.trim() || undefined, username: body.username?.trim() || undefined, displayName: body.displayName?.trim() || undefined }
-  const result: CheckResult = await checkIdentity(reader, input, await getDirectory())
+  const result: CheckResult = await checkIdentity(ctx.reader, input, await getDirectory(ctx))
   if (result.status !== 'verified' && !(result.status === 'unknown' && result.reason === 'no-identifier'))
-    await store.addAlert({ org, kind: result.status, subject: input, detail: input.username ? `@${input.username.replace(/^@/, '')}` : (input.displayName ?? input.telegramId ?? 'unknown') })
+    await ctx.scope.addAlert({ kind: result.status, subject: input, detail: input.username ? `@${input.username.replace(/^@/, '')}` : (input.displayName ?? input.telegramId ?? 'unknown') })
   return json(result)
 }

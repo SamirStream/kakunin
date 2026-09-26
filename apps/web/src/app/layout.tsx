@@ -29,7 +29,8 @@ export const viewport: Viewport = { width: 'device-width', initialScale: 1, them
 
 const NAV = [
   { href: '/check', label: 'Check' },
-  { href: '/org/kakunin-demo.eth', label: 'Dashboard' },
+  { href: '/orgs', label: 'Projects' },
+  { href: '/create', label: 'Create' },
   { href: '/demo', label: 'Demo' },
   { href: '/docs', label: 'API' },
 ]
@@ -75,6 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
             <nav aria-label="Footer" className="flex flex-wrap items-start gap-x-5 gap-y-1">
               <a className="underline" href="https://t.me/KakuninxyzBot/app" target="_blank" rel="noopener noreferrer">Telegram Mini App</a>
+              <Link className="underline" href="/create">Create an organisation</Link>
               <Link className="underline" href="/docs">API</Link>
               <a className="underline" href="https://github.com/SamirStream/kakunin" target="_blank" rel="noopener noreferrer">Source</a>
             </nav>

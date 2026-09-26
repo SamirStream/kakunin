@@ -3,10 +3,9 @@
 //   - apps/web /api/telegram : webhook, for the cloud deployment (serverless, no long-running process)
 // Everything here is stateless between updates except an in-memory rate limiter; persistent state lives in the Store.
 import { Bot, InlineKeyboard, Keyboard } from 'grammy'
-import { createWalletClient, http, type Hex } from 'viem'
-import { privateKeyToAccount } from 'viem/accounts'
-import { sepolia } from 'viem/chains'
-import { DEPLOYMENT, chainReader, createRateLimiter, issueTelegramAttestation, publicClient } from '@kakunin/core'
+import type { Hex } from 'viem'
+import { createRateLimiter, issueTelegramAttestation, publicClient } from '@kakunin/core'
+import { createOrgResolver } from '@kakunin/core/orgs'
 import type { Store } from '@kakunin/core/store'
 import { WELCOME, extractSubject, handleCheck, handleStart, type Deps } from './handlers'
 
@@ -17,6 +16,8 @@ export interface BotConfig {
   hrKey: Hex
   adminSecret?: string
   rpc?: string
+  /** KAKUNIN_KEY_SECRET: opens the operator keys of self-serve organisations */
+  keySecret?: string
 }
 
 /** Read the bot configuration from the environment, failing with a clear message when something is missing. */
@@ -33,28 +34,33 @@ export function botConfigFromEnv(store: Store, env: Record<string, string | unde
     hrKey: need('HR_PRIVATE_KEY') as Hex,
     adminSecret: env.ADMIN_SECRET && env.ADMIN_SECRET !== 'change-me' ? env.ADMIN_SECRET : undefined,
     rpc: env.SEPOLIA_RPC_URL,
+    keySecret: env.KAKUNIN_KEY_SECRET,
   }
 }
 
 export function createBot(cfg: BotConfig): { bot: Bot; deps: Deps } {
   const rpc = cfg.rpc ?? 'https://ethereum-sepolia-rpc.publicnode.com'
   const pub = publicClient(rpc)
-  const ctxFor = (key: Hex) => {
-    const account = privateKeyToAccount(key)
-    return { pub, account, wallet: createWalletClient({ account, chain: sepolia, transport: http(rpc) }) }
-  }
-  const orgCtx = ctxFor(cfg.orgKey)
-  const hrCtx = ctxFor(cfg.hrKey)
   const { store } = cfg
+  const resolver = createOrgResolver({ store, pub, rpc, secret: cfg.keySecret, orgKey: cfg.orgKey, hrKey: cfg.hrKey })
 
   const bot = new Bot(cfg.token)
   const deps: Deps = {
     store,
-    reader: chainReader(pub),
-    org: DEPLOYMENT.orgName,
-    issue: (label, telegramId) => issueTelegramAttestation({ org: orgCtx, hr: hrCtx, label, telegramId }),
-    async notifyAdmins(text) {
-      for (const chat of await store.adminChats()) await bot.api.sendMessage(chat, text)
+    orgs: () => resolver.names(),
+    async org(name) {
+      const ctx = await resolver.get(name)
+      if (!ctx) return null
+      return {
+        name: ctx.name, reader: ctx.reader, scope: ctx.scope,
+        issue(label, telegramId) {
+          const { attester, hr } = ctx.signers()
+          return issueTelegramAttestation({ org: attester as never, hr, label, telegramId }, ctx.d)
+        },
+      }
+    },
+    async notify(chats, text) {
+      for (const chat of chats) await bot.api.sendMessage(chat, text)
     },
   }
   const awaitingHandle = new Set<number>() // only changes the wording of one error message, so losing it between serverless calls is harmless
@@ -100,17 +106,19 @@ export function createBot(cfg: BotConfig): { bot: Bot; deps: Deps } {
     const arg = ctx.match.trim()
     if (!arg) {
       awaitingHandle.add(ctx.chat.id)
-      return ctx.reply(`Which person? Forward one of their messages, or send their @username / numeric ID. (Org: ${deps.org})`)
+      return ctx.reply('Which person? Forward one of their messages, or send their @username / numeric ID. To check one project only: /check acme.eth @username')
     }
-    const subject = extractSubject({ text: arg.split(/\s+/).at(-1) })
+    const parts = arg.split(/\s+/)
+    const only = parts.find((p) => /^[a-z0-9-]{3,32}\.eth$/i.test(p))
+    const subject = extractSubject({ text: parts.filter((p) => p !== only).at(-1) })
     if (!subject) return ctx.reply('Send a @username, a numeric ID, or forward a message.')
-    await ctx.reply((await handleCheck(deps, subject)).text)
+    await ctx.reply((await handleCheck(deps, subject, only)).text)
   })
   // Admin: /subscribe <ADMIN_SECRET> in the org's chat to receive impersonation alerts.
   bot.command('subscribe', async (ctx) => {
     if (!cfg.adminSecret || ctx.match.trim() !== cfg.adminSecret) return ctx.reply('❌ Wrong secret.')
     await store.addOrgAdminChat(ctx.chat.id)
-    await ctx.reply(`🔔 This chat will receive impersonation alerts for ${deps.org}.`)
+    await ctx.reply('🔔 This chat will receive impersonation alerts for kakunin-demo.eth (the sandbox organisation). For your own organisation, open the Telegram link on its dashboard.')
   })
   // Forwarded messages (or a bare @username after /check).
   bot.on('message', async (ctx) => {

@@ -38,6 +38,9 @@ export type CheckResult =
   | { status: 'lookalike'; org: string; lookalikeOf: { label: string; fqn: string; handle: string }; distance: number }
   | { status: 'unknown'; org: string; reason?: 'invalid-attestation' | 'no-identifier' }
 
+/** A non-verified answer only matters to an organisation when the person relates to it: an ex-member, or someone imitating a member. */
+export const relatesToOrg = (status: CheckResult['status']) => status === 'former' || status === 'lookalike'
+
 /** Everything the check needs from the chain, so the orchestration can be unit-tested with a fake. */
 export interface Reader {
   orgName: string

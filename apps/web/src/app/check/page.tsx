@@ -9,6 +9,8 @@ export default function CheckPage() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<ApiResult | null>(null)
+  const [known, setKnown] = useState<string[]>(['kakunin-demo.eth'])
+  useEffect(() => { fetch('/api/orgs').then((r) => r.json()).then((d: { orgs: { name: string }[] }) => setKnown(['kakunin-demo.eth', ...d.orgs.map((o) => o.name)])).catch(() => {}) }, [])
 
   async function submit(o: string, w0: string, n: string) {
     setBusy(true); setError(null); setResult(null)
@@ -29,10 +31,12 @@ export default function CheckPage() {
   // Shareable link: /check?org=kakunin-demo.eth&who=@alice_kakunin runs the check on load.
   useEffect(() => {
     const q = new URLSearchParams(window.location.search)
+    const o = q.get('org') ?? 'kakunin-demo.eth'
+    setOrg(o)
     const w = q.get('who')
     if (!w) return
-    const o = q.get('org') ?? 'kakunin-demo.eth', n = q.get('name') ?? ''
-    setOrg(o); setWho(w); setName(n)
+    const n = q.get('name') ?? ''
+    setWho(w); setName(n)
     void submit(o, w, n)
   }, [])
 
@@ -48,7 +52,8 @@ export default function CheckPage() {
       <form onSubmit={run} className="card space-y-4 p-5">
         <label className="block space-y-1 text-sm font-medium">
           Organization (ENS name)
-          <input className="input mono" value={org} onChange={(e) => setOrg(e.target.value)} placeholder="kakunin-demo.eth" autoCapitalize="none" spellCheck={false} />
+          <input className="input mono" list="kk-orgs" value={org} onChange={(e) => setOrg(e.target.value)} placeholder="kakunin-demo.eth" autoCapitalize="none" spellCheck={false} />
+          <datalist id="kk-orgs">{known.map((o) => <option key={o} value={o} />)}</datalist>
         </label>
         <label className="block space-y-1 text-sm font-medium">
           @username or Telegram ID

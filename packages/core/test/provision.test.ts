@@ -32,7 +32,7 @@ describe('startProvision guards', () => {
     const job = await startProvision(s, env(pubWith(true, 10n ** 18n)), { label: 'acme', owner })
     expect(job).toMatchObject({ name: 'acme.eth', status: 'running', step: 'fund', owner })
     expect(job.operatorKey).not.toMatch(/^0x/) // sealed, never the raw key
-    expect(progressOf(job)).toMatchObject({ index: 0, total: 6, status: 'running' })
+    expect(progressOf(job)).toMatchObject({ index: 0, total: 7, status: 'running' })
     await expect(startProvision(s, env(pubWith(true, 10n ** 18n)), { label: 'acme', owner })).rejects.toThrow(/being created/)
   })
   it('refuses taken names, invalid names and an empty sponsor', async () => {

@@ -24,6 +24,7 @@
     "./access": "./src/access.ts",
     "./telegram": "./src/telegram.ts",
     "./provision": "./src/provision.ts",
-    "./crypto": "./src/crypto.ts"
+    "./crypto": "./src/crypto.ts",
+    "./orgs": "./src/orgs.ts"
   }
 }

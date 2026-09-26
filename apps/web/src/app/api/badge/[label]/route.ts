@@ -1,5 +1,5 @@
 import { limited } from '@/lib/guard'
-import { LABEL_RE, lookupMember, org } from '@/lib/server'
+import { LABEL_RE, getOrg, lookupMember } from '@/lib/server'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,14 +29,15 @@ export async function GET(req: Request, ctx: { params: Promise<{ label: string }
   const l = decodeURIComponent(label).toLowerCase().replace(/\.svg$/, '')
   let text = 'unavailable'
   let color: string = COLORS.mute
-  if (LABEL_RE.test(l)) {
+  const oc = await getOrg(new URL(req.url).searchParams.get("org"))
+  if (oc && LABEL_RE.test(l)) {
     try {
-      const r = await lookupMember(l)
-      if (r.kind === 'checked' && r.result.status === 'verified') { text = `verified · ${org}`; color = COLORS.ok }
+      const r = await lookupMember(oc, l)
+      if (r.kind === 'checked' && r.result.status === 'verified') { text = `verified · ${oc.name}`; color = COLORS.ok }
       else if (r.kind === 'checked' && r.result.status === 'former') { text = 'former member'; color = COLORS.warn }
       else if (r.kind === 'unattested') { text = `team member · not attested`; color = COLORS.warn }
       else { text = 'not a member'; color = COLORS.bad }
     } catch { /* keep "unavailable" */ }
-  } else { text = 'invalid'; color = COLORS.bad }
+  } else { text = oc ? "invalid" : "unknown org"; color = COLORS.bad }
   return new Response(badge(text, color), { headers: { 'content-type': 'image/svg+xml; charset=utf-8', 'cache-control': 'public, max-age=60, s-maxage=60' } })
 }

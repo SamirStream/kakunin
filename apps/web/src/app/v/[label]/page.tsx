@@ -2,23 +2,30 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ResultCard } from '@/components/ResultCard'
 import { CopyButton } from '@/components/CopyButton'
-import { LABEL_RE, lookupMember, org } from '@/lib/server'
+import { LABEL_RE, getOrg, lookupMember, org as DEMO_ORG } from '@/lib/server'
 
 export const dynamic = 'force-dynamic'
 
-export async function generateMetadata({ params }: { params: Promise<{ label: string }> }): Promise<Metadata> {
+type Search = Promise<{ org?: string }>
+
+export async function generateMetadata({ params, searchParams }: { params: Promise<{ label: string }>; searchParams: Search }): Promise<Metadata> {
   const { label } = await params
+  const org = ((await searchParams).org ?? DEMO_ORG).toLowerCase()
   return { title: `${label} · ${org}`, description: `What Kakunin can prove about ${label}.team.${org}, straight from ENSv2.`, robots: { index: false } }
 }
 
 const SITE = 'https://kakunin.xyz'
 const BOT = process.env.TELEGRAM_BOT_USERNAME || 'KakuninxyzBot'
 
-export default async function MemberProfile({ params }: { params: Promise<{ label: string }> }) {
+export default async function MemberProfile({ params, searchParams }: { params: Promise<{ label: string }>; searchParams: Search }) {
   const label = decodeURIComponent((await params).label).toLowerCase()
+  const ctx = await getOrg((await searchParams).org)
+  if (!ctx) return <div className="card mx-auto max-w-2xl p-6 text-sm">Kakunin does not know this organisation. <Link className="underline" href="/create">Create it</Link> or check the name.</div>
+  const org = ctx.name
+  const q = ctx.demo ? '' : `?org=${org}`
   const fqn = `${label}.team.${org}`
-  const r = LABEL_RE.test(label) ? await lookupMember(label).catch(() => null) : null
-  const md = `[![Kakunin](${SITE}/api/badge/${label})](${SITE}/v/${label})`
+  const r = LABEL_RE.test(label) ? await lookupMember(ctx, label).catch(() => null) : null
+  const md = `[![Kakunin](${SITE}/api/badge/${label}${q})](${SITE}/v/${label}${q})`
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -44,7 +51,7 @@ export default async function MemberProfile({ params }: { params: Promise<{ labe
       )}
       {r?.kind === 'checked' && (
         <>
-          <ResultCard result={r.result} shareUrl={`${SITE}/v/${label}`} />
+          <ResultCard result={r.result} shareUrl={`${SITE}/v/${label}${q}`} />
           <div className="card space-y-3 p-5 text-sm">
             <h2 className="font-bold">Is the person messaging you really {label}?</h2>
             <p>
@@ -64,14 +71,14 @@ export default async function MemberProfile({ params }: { params: Promise<{ labe
         <h2 className="font-bold">Embed the status badge</h2>
         <p style={{ color: 'var(--muted)' }}>Live, refreshed every minute. Same caveat: it shows the member’s status, not who is on the other end of a chat.</p>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/api/badge/${label}`} alt={`Kakunin badge for ${label}`} height={22} />
+        <img src={`/api/badge/${label}${q}`} alt={`Kakunin badge for ${label}`} height={22} />
         <div className="flex flex-wrap items-center gap-2">
           <code className="mono max-w-full flex-1 overflow-x-auto whitespace-nowrap rounded-lg p-2" style={{ background: 'var(--info-bg)' }}>{md}</code>
           <CopyButton text={md} label="Copy Markdown" />
         </div>
       </div>
 
-      <p className="text-sm"><Link className="underline" href="/org/kakunin-demo.eth">See the whole team</Link> · <Link className="underline" href="/docs">API</Link></p>
+      <p className="text-sm"><Link className="underline" href={`/org/${org}`}>See the whole team</Link> · <Link className="underline" href="/docs">API</Link></p>
     </div>
   )
 }

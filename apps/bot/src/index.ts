@@ -14,4 +14,5 @@ const { bot, deps } = createBot(botConfigFromEnv(store))
 // Polling and webhook are mutually exclusive: never silently take over a live cloud webhook.
 const hook = await bot.api.getWebhookInfo()
 if (hook.url) throw new Error(`A webhook is set (${hook.url}), so the cloud deployment owns this bot. Run \`pnpm webhook:delete\` first to use local polling.`)
-bot.start({ onStart: (me) => console.log(`Kakunin bot @${me.username} running (polling) for ${deps.org}`) })
+const names = await deps.orgs()
+bot.start({ onStart: (me) => console.log(`Kakunin bot @${me.username} running (polling) for ${names.length} organisation(s): ${names.join(', ')}`) })

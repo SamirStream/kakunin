@@ -2,7 +2,7 @@
 import { HTTPFacilitatorClient, x402ResourceServer } from '@x402/core/server'
 import { ExactEvmScheme } from '@x402/evm/exact/server'
 import { DEPLOYMENT, checkIdentity } from '@kakunin/core'
-import { getDirectory, reader } from './server'
+import { getDirectory, getOrg } from './server'
 
 /** Base Sepolia: the network the public x402 test facilitator supports. */
 export const NETWORK = 'eip155:84532' as const
@@ -25,9 +25,11 @@ export const routeConfig = (path: string, payTo: `0x${string}`, label: string) =
   },
 })
 
-/** The paid resource itself: run a Kakunin check for the query (telegramId / username / displayName). */
+/** The paid resource itself: run a Kakunin check for the query (telegramId / username / displayName, and optionally `org`). */
 export async function paidCheck(req: Request, servedBy: string) {
   const q = new URL(req.url).searchParams
   const input = { telegramId: q.get('telegramId') ?? undefined, username: q.get('username') ?? undefined, displayName: q.get('displayName') ?? undefined }
-  return { served_by: servedBy, result: await checkIdentity(reader, input, await getDirectory()) }
+  const ctx = await getOrg(q.get('org'))
+  if (!ctx) return { served_by: servedBy, result: { status: 'unknown' as const, org: q.get('org') ?? '', reason: 'org-not-registered' } }
+  return { served_by: servedBy, result: await checkIdentity(ctx.reader, input, await getDirectory(ctx)) }
 }

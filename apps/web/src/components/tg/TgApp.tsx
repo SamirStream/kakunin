@@ -116,7 +116,7 @@ export function TgApp() {
     return t && /^[A-Za-z0-9_-]{8,40}$/.test(t) ? t : null
   }, [me?.startParam])
 
-  useEffect(() => { if (inviteToken && me && me.result.status !== 'verified') setTab('card') }, [inviteToken, me])
+  useEffect(() => { if (inviteToken && me) setTab('card') }, [inviteToken, me])
 
   const tabs: Tab[] = me?.admin ? ['check', 'card', 'admin'] : ['check', 'card']
   const tg = tgRef.current
@@ -127,7 +127,7 @@ export function TgApp() {
         <HankoMark size={30} />
         <div className="min-w-0 leading-tight">
           <div className="font-bold">Kakunin <span className="font-jp text-sm" style={{ color: 'var(--muted)' }}>確認</span></div>
-          <div className="mono truncate" style={{ color: 'var(--muted)' }}>kakunin-demo.eth</div>
+          <div className="mono truncate" style={{ color: 'var(--muted)' }}>{me?.result.status === 'verified' || me?.result.status === 'former' ? me.result.org : (me?.adminOf?.[0] ?? 'ENSv2 team registries')}</div>
         </div>
         <div className="ml-auto flex items-center gap-2">
           {mode === 'preview' && !embed && <span className="pill pill-warn">Preview</span>}
@@ -145,9 +145,9 @@ export function TgApp() {
       <main className="flex-1 overflow-y-auto px-4 pb-28 pt-4">
         <div className="mx-auto max-w-md space-y-4">
           {mode === 'boot' && <div className="h-40 animate-pulse rounded-2xl" style={{ background: 'var(--info-bg)' }} aria-busy />}
-          {mode !== 'boot' && tab === 'check' && <CheckTab call={call} tg={tg} say={say} live={mode === 'live'} />}
+          {mode !== 'boot' && tab === 'check' && <CheckTab call={call} tg={tg} say={say} live={mode === 'live'} orgs={me?.orgs ?? []} />}
           {mode !== 'boot' && tab === 'card' && <CardTab me={me} call={call} tg={tg} say={say} reload={loadMe} inviteToken={inviteToken} />}
-          {mode !== 'boot' && tab === 'admin' && me?.admin && <AdminTab call={call} tg={tg} say={say} />}
+          {mode !== 'boot' && tab === 'admin' && me?.admin && <AdminTab call={call} tg={tg} say={say} adminOf={me.adminOf?.length ? me.adminOf : [me.result.org]} />}
           <p className="pt-3 text-center text-[11px]" style={{ color: 'var(--muted)' }}>
             By Samir Touinssi, CEO of{' '}
             <a className="font-semibold underline" href="https://thearch.consulting" onClick={(e) => { if (tg?.openLink) { e.preventDefault(); tg.openLink('https://thearch.consulting') } }} target="_blank" rel="noopener noreferrer">The Arch</a>
@@ -180,8 +180,9 @@ export function TgApp() {
 type Common = { call: <T>(p: string, b?: object) => Promise<T>; tg: WebApp | null; say: (t: string, tone?: 'ok' | 'bad' | 'info') => void }
 
 /* ---------------------------------------------------------------------------------------------- Check */
-function CheckTab({ call, tg, say, live }: Common & { live: boolean }) {
+function CheckTab({ call, tg, say, live, orgs }: Common & { live: boolean; orgs: string[] }) {
   const [who, setWho] = useState('')
+  const [only, setOnly] = useState('') // '' = every organisation on Kakunin
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<ApiResult | null>(null)
   const [recent, setRecent] = useState<{ who: string; status: string }[]>([])
@@ -193,7 +194,7 @@ function CheckTab({ call, tg, say, live }: Common & { live: boolean }) {
     if (!w) return
     setWho(w); setBusy(true); setResult(null)
     try {
-      const r = await call<ApiResult>('/api/tg/check', { who: w })
+      const r = await call<ApiResult>('/api/tg/check', { who: w, org: only || undefined })
       setResult(r)
       haptic(tg, r.status === 'verified' ? 'success' : r.status === 'unknown' ? 'warning' : 'error')
       const next = [{ who: w, status: r.status }, ...recent.filter((x) => x.who !== w)].slice(0, 5)
@@ -211,6 +212,12 @@ function CheckTab({ call, tg, say, live }: Common & { live: boolean }) {
       </div>
       <form onSubmit={(e) => { e.preventDefault(); void run(who) }} className="space-y-2">
         <input className="input" value={who} onChange={(e) => setWho(e.target.value)} placeholder="@username or Telegram ID" autoCapitalize="none" autoCorrect="off" spellCheck={false} aria-label="@username or Telegram ID" />
+        {orgs.length > 1 && (
+          <select className="input" value={only} onChange={(e) => setOnly(e.target.value)} aria-label="Project to check against">
+            <option value="">Any project on Kakunin</option>
+            {orgs.map((o) => <option key={o} value={o}>{o}</option>)}
+          </select>
+        )}
         <div className="flex gap-2">
           <button className="btn btn-primary flex-1 !py-3" disabled={busy || !who.trim()}>{busy ? 'Checking on ENS…' : 'Check'}</button>
           {live && (
@@ -249,7 +256,7 @@ function CardTab({ me, call, tg, say, reload, inviteToken }: Common & { me: Me |
   if (!me) return <div className="h-40 animate-pulse rounded-2xl" style={{ background: 'var(--info-bg)' }} aria-busy />
   const r = me.result
   const label = r.status === 'verified' || r.status === 'former' ? r.member.label : null
-  const profile = label ? `${SITE}/v/${label}` : null
+  const profile = label ? `${SITE}/v/${label}${r.org === 'kakunin-demo.eth' ? '' : `?org=${r.org}`}` : null
 
   return (
     <>
@@ -261,7 +268,7 @@ function CardTab({ me, call, tg, say, reload, inviteToken }: Common & { me: Me |
         <div className="min-w-0"><div className="truncate font-bold">{me.user.name}</div><div className="mono truncate" style={{ color: 'var(--muted)' }}>ID {me.user.id}{me.user.username ? ` · @${me.user.username}` : ''}</div></div>
       </div>
 
-      {inviteToken && r.status !== 'verified' && <Onboard token={inviteToken} call={call} tg={tg} say={say} done={reload} />}
+      {inviteToken && <Onboard token={inviteToken} call={call} tg={tg} say={say} done={reload} />}
 
       {r.status === 'verified' && (
         <>
@@ -288,6 +295,12 @@ function CardTab({ me, call, tg, say, reload, inviteToken }: Common & { me: Me |
         </>
       )}
 
+      {(me.memberships?.length ?? 0) > 1 && (
+        <div className="card space-y-1.5 p-4 text-sm"><div className="font-semibold">All your projects</div>
+          {me.memberships!.map((m) => <div key={m.org} className="flex items-center justify-between"><span className="mono">{m.org}</span><span className={`pill ${m.status === 'verified' ? 'pill-ok' : 'pill-warn'}`}>{m.status === 'verified' ? 'verified' : 'former'}</span></div>)}
+        </div>
+      )}
+
       {r.status === 'former' && (
         <div className="card space-y-2 p-5"><span className="pill pill-warn w-fit">🕓 Former member</span><p className="text-sm">Your access to <span className="mono">{r.org}</span> was revoked. People checking you will see that.</p></div>
       )}
@@ -305,27 +318,37 @@ function CardTab({ me, call, tg, say, reload, inviteToken }: Common & { me: Me |
 }
 
 function Onboard({ token, call, tg, say, done }: Common & { token: string; done: () => Promise<Me | null> }) {
-  const [inv, setInv] = useState<{ label: string; fqn: string; org: string } | null>(null)
+  const [inv, setInv] = useState<{ kind?: 'member' | 'admin'; label: string; fqn: string; org: string } | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0) // 0 idle, 1 signing, 2 writing, 3 done
-  useEffect(() => { call<{ label: string; fqn: string; org: string }>('/api/tg/invite', { token }).then(setInv, (e) => setErr((e as Error).message)) }, [call, token])
+  useEffect(() => { call<{ kind?: 'member' | 'admin'; label: string; fqn: string; org: string }>('/api/tg/invite', { token }).then(setInv, (e) => setErr((e as Error).message)) }, [call, token])
   async function go() {
     setStep(1); haptic(tg, 'tap')
     const t = setTimeout(() => setStep(2), 4000) // the two on-chain writes take about 25 s
     try {
       await call('/api/tg/onboard', { token })
-      clearTimeout(t); setStep(3); say('You are verified', 'ok')
+      clearTimeout(t); setStep(3); say(inv?.kind === 'admin' ? 'You are now an admin' : 'You are verified', 'ok')
       await done()
     } catch (e) { clearTimeout(t); setStep(0); setErr((e as Error).message); say((e as Error).message, 'bad') }
   }
   if (err && !inv) return <div className="card p-4 text-sm" role="alert"><span className="pill pill-bad mb-2">Invite problem</span><p>{err}</p></div>
   if (!inv) return <div className="h-24 animate-pulse rounded-2xl" style={{ background: 'var(--info-bg)' }} aria-busy />
-  const steps = ['Confirm', 'Org signs the attestation', 'Writing records on ENS']
+  const admin = inv.kind === 'admin'
+  const steps = admin ? ['Confirm', 'Linking this account', 'Done'] : ['Confirm', 'Org signs the attestation', 'Writing records on ENS']
   return (
     <div className="card space-y-3 p-5">
       <span className="pill pill-info w-fit">Invitation</span>
-      <h2 className="text-lg font-bold">Join {inv.org} as <span style={{ color: 'var(--brand)' }}>{inv.label}</span></h2>
-      <p className="text-sm" style={{ color: 'var(--muted)' }}>Your Telegram account will be attested on ENS as <span className="mono">{inv.fqn}</span>.</p>
+      {admin ? (
+        <>
+          <h2 className="text-lg font-bold">Administer <span style={{ color: 'var(--brand)' }}>{inv.org}</span></h2>
+          <p className="text-sm" style={{ color: 'var(--muted)' }}>This account will receive impersonation alerts for {inv.org} and get its team console in this app.</p>
+        </>
+      ) : (
+        <>
+          <h2 className="text-lg font-bold">Join {inv.org} as <span style={{ color: 'var(--brand)' }}>{inv.label}</span></h2>
+          <p className="text-sm" style={{ color: 'var(--muted)' }}>Your Telegram account will be attested on ENS as <span className="mono">{inv.fqn}</span>.</p>
+        </>
+      )}
       {step > 0 && (
         <ol className="space-y-1.5 text-sm" aria-live="polite">
           {steps.map((s, i) => (
@@ -336,18 +359,19 @@ function Onboard({ token, call, tg, say, done }: Common & { token: string; done:
         </ol>
       )}
       {err && <p className="text-xs" style={{ color: 'var(--bad)' }} role="alert">{err}</p>}
-      <button className="btn btn-primary w-full !py-3" onClick={go} disabled={step > 0 && step < 3}>{step === 0 ? 'Verify me' : step < 3 ? 'Working… (about 25 s)' : 'Done'}</button>
+      <button className="btn btn-primary w-full !py-3" onClick={go} disabled={step > 0 && step < 3}>{step === 0 ? (admin ? 'Make me an admin' : 'Verify me') : step < 3 ? (admin ? 'Working…' : 'Working… (about 25 s)') : 'Done'}</button>
     </div>
   )
 }
 
 /* ------------------------------------------------------------------------------------------- Team (admin) */
-function AdminTab({ call, tg, say }: Common) {
+function AdminTab({ call, tg, say, adminOf }: Common & { adminOf: string[] }) {
   const [data, setData] = useState<AdminData | null>(null)
+  const [orgName, setOrgName] = useState(adminOf[0] ?? '')
   const [busy, setBusy] = useState<string | null>(null)
   const [form, setForm] = useState({ label: '', role: '' })
   const [invite, setInvite] = useState<{ label: string; url: string } | null>(null)
-  const load = useCallback(async () => { try { setData(await call<AdminData>('/api/tg/admin')) } catch (e) { say((e as Error).message, 'bad') } }, [call, say])
+  const load = useCallback(async () => { try { setData(await call<AdminData>('/api/tg/admin', { org: orgName || undefined })) } catch (e) { say((e as Error).message, 'bad') } }, [call, say, orgName])
   useEffect(() => { void load(); const t = setInterval(load, 8000); return () => clearInterval(t) }, [load])
 
   async function confirmAsk(text: string): Promise<boolean> {
@@ -357,12 +381,12 @@ function AdminTab({ call, tg, say }: Common) {
   async function revoke(label: string) {
     if (!(await confirmAsk(`Revoke ${label}? They will show as a former member within seconds.`))) return
     setBusy(`rev-${label}`)
-    try { await call('/api/tg/admin/revoke', { label }); say(`${label} revoked on-chain`, 'ok'); await load() } catch (e) { say((e as Error).message, 'bad') } finally { setBusy(null) }
+    try { await call('/api/tg/admin/revoke', { label, org: orgName }); say(`${label} revoked on-chain`, 'ok'); await load() } catch (e) { say((e as Error).message, 'bad') } finally { setBusy(null) }
   }
   async function mint(label: string, role?: string) {
     setBusy(`inv-${label}`)
     try {
-      const r = await call<{ url: string }>('/api/tg/admin/add', { label, role })
+      const r = await call<{ url: string }>('/api/tg/admin/add', { label, role, org: orgName })
       setInvite({ label, url: r.url }); say('Invite ready', 'ok'); await load()
     } catch (e) { say((e as Error).message, 'bad') } finally { setBusy(null) }
   }
@@ -371,6 +395,11 @@ function AdminTab({ call, tg, say }: Common) {
   const KIND: Record<string, string> = { lookalike: 'pill-bad', former: 'pill-warn', unknown: 'pill-info' }
   return (
     <>
+      {adminOf.length > 1 && (
+        <select className="input" value={orgName} onChange={(e) => { setData(null); setOrgName(e.target.value) }} aria-label="Organisation">
+          {adminOf.map((o) => <option key={o} value={o}>{o}</option>)}
+        </select>
+      )}
       <div className="grid grid-cols-4 gap-2 text-center">
         {[['Active', data.stats.active, 'var(--ok)'], ['Attested', `${data.stats.attested}/${data.stats.active}`, 'var(--ink)'], ['Revoked', data.stats.revoked, 'var(--warn)'], ['Alerts 24h', data.stats.alerts24h, data.stats.alerts24h ? 'var(--bad)' : 'var(--ink)']].map(([l, v, c]) => (
           <div key={String(l)} className="card px-1 py-2.5"><div className="text-xl font-extrabold tabular-nums" style={{ color: String(c) }}>{v}</div><div className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>{l}</div></div>
@@ -417,7 +446,7 @@ function AdminTab({ call, tg, say }: Common) {
 
       <form className="card space-y-2 p-4" onSubmit={async (e) => { e.preventDefault(); const l = form.label.trim().toLowerCase(); if (!l) return; await mint(l, form.role.trim() || 'Member'); setForm({ label: '', role: '' }) }}>
         <h2 className="font-bold">Add a member</h2>
-        <p className="text-xs" style={{ color: 'var(--muted)' }}>Registers <span className="mono">label.team.kakunin-demo.eth</span> on-chain with the HR wallet, then creates the invite.</p>
+        <p className="text-xs" style={{ color: 'var(--muted)' }}>Registers <span className="mono">label.team.{data.org}</span> on-chain with the HR wallet, then creates the invite.</p>
         <div className="grid grid-cols-2 gap-2">
           <input className="input" placeholder="label (carol)" value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} autoCapitalize="none" aria-label="Member label" />
           <input className="input" placeholder="Role" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} aria-label="Role" />

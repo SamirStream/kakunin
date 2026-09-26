@@ -1,22 +1,23 @@
-import { DEPLOYMENT, getMemberState } from '@kakunin/core'
-import { verifyInviteAuth } from '@kakunin/core/auth'
+import { getMemberState } from '@kakunin/core'
 import { limited } from '@/lib/guard'
-import { botUsername, json, pub, store } from '@/lib/server'
+import { isResponse, requireAdmin } from '@/lib/orgauth'
+import { LABEL_RE, botUsername, json, orgOr404, pub } from '@/lib/server'
 
 export const dynamic = 'force-dynamic'
 
-// POST { label, issuedAt, signature } -> one-time Telegram deep link.
-// An invite lets its holder bind THEIR Telegram ID to the member subname, so it is only issued against a fresh EIP-191
-// signature from the org's HR or ORG wallet (dashboard signs it with the connected wallet). Member must already be registered.
+// POST { org?, label } signed by an org admin (x-kk-issued / x-kk-sig) -> one-time Telegram deep link.
+// An invite lets its holder bind THEIR Telegram ID to the member subname, so it is only issued against a fresh wallet signature
+// naming this exact member. The member must already be registered on the team registry.
 export async function POST(req: Request) {
   const blocked = limited(req, 'invite', 10)
   if (blocked) return blocked
-  const { label, issuedAt, signature } = (await req.json().catch(() => ({}))) as { label?: string; issuedAt?: number; signature?: `0x${string}` }
-  if (!label || !/^[a-z0-9-]{1,32}$/.test(label)) return json({ error: 'invalid label' }, 400)
-  if (typeof issuedAt !== 'number' || typeof signature !== 'string') return json({ error: 'signature required: connect the HR or ORG wallet' }, 401)
-  const auth = await verifyInviteAuth({ org: DEPLOYMENT.orgName, label, issuedAtMs: issuedAt, signature, allowedSigners: [DEPLOYMENT.hrWallet, DEPLOYMENT.orgWallet] })
-  if (!auth.ok) return json({ error: auth.reason }, 401)
-  if ((await getMemberState(pub, label)).status !== 'REGISTERED') return json({ error: label + ' is not an active member' }, 409)
-  const inv = await store.createInvite(label)
+  const { org, label } = (await req.json().catch(() => ({}))) as { org?: string; label?: string }
+  if (!label || !LABEL_RE.test(label)) return json({ error: 'invalid label' }, 400)
+  const ctx = await orgOr404(org)
+  if (isResponse(ctx)) return ctx
+  const auth = await requireAdmin(req, ctx, 'invite', label)
+  if (isResponse(auth)) return auth
+  if ((await getMemberState(pub, label, ctx.d)).status !== 'REGISTERED') return json({ error: label + ' is not an active member' }, 409)
+  const inv = await ctx.scope.createInvite(label)
   return json({ token: inv.token, url: 'https://t.me/' + botUsername() + '?start=' + inv.token })
 }

@@ -43,3 +43,37 @@ describe('createRateLimiter', () => {
     expect(rl.take('a')).toBe(true)
   })
 })
+
+import { ACTION_MAX_AGE_MS, actionMessage, verifyAction } from '../src/auth'
+import { generatePrivateKey as gen, privateKeyToAccount as toAcc } from 'viem/accounts'
+
+describe('verifyAction', () => {
+  const owner = toAcc(gen()), other = toAcc(gen())
+  const sign = (a: typeof owner, org: string, action: 'revoke-member' | 'session', target: string, t: number) => a.signMessage({ message: actionMessage(org, action, target, t) })
+  const now = 1_790_000_000_000
+  it('accepts the owner for exactly the signed action and target', async () => {
+    const t = now - 1000
+    const signature = await sign(owner, 'acme.eth', 'revoke-member', 'bob', t)
+    expect(await verifyAction({ org: 'acme.eth', action: 'revoke-member', target: 'bob', issuedAtMs: t, signature, allowedSigners: [owner.address], nowMs: now })).toEqual({ ok: true, signer: owner.address })
+    for (const swap of [{ target: 'alice' }, { org: 'evil.eth' }, { action: 'session' as const }]) {
+      const r = await verifyAction({ org: 'acme.eth', action: 'revoke-member', target: 'bob', issuedAtMs: t, signature, allowedSigners: [owner.address], nowMs: now, ...swap })
+      expect(r.ok).toBe(false)
+    }
+  })
+  it('rejects strangers, stale signatures and garbage', async () => {
+    const t = now - 1000
+    const strange = await sign(other, 'acme.eth', 'revoke-member', 'bob', t)
+    expect((await verifyAction({ org: 'acme.eth', action: 'revoke-member', target: 'bob', issuedAtMs: t, signature: strange, allowedSigners: [owner.address], nowMs: now }))).toMatchObject({ ok: false, reason: expect.stringMatching(/does not administer/) })
+    const old = now - ACTION_MAX_AGE_MS - 1
+    const stale = await sign(owner, 'acme.eth', 'revoke-member', 'bob', old)
+    expect((await verifyAction({ org: 'acme.eth', action: 'revoke-member', target: 'bob', issuedAtMs: old, signature: stale, allowedSigners: [owner.address], nowMs: now })).ok).toBe(false)
+    expect((await verifyAction({ org: 'acme.eth', action: 'revoke-member', target: 'bob', issuedAtMs: t, signature: '0x1234', allowedSigners: [owner.address], nowMs: now }))).toMatchObject({ ok: false, reason: 'invalid signature' })
+  })
+  it('a session signature lasts an hour, an action only five minutes', async () => {
+    const t = now - 30 * 60 * 1000
+    const session = await sign(owner, 'acme.eth', 'session', '', t)
+    expect((await verifyAction({ org: 'acme.eth', action: 'session', issuedAtMs: t, signature: session, allowedSigners: [owner.address], nowMs: now })).ok).toBe(true)
+    const act = await sign(owner, 'acme.eth', 'revoke-member', 'bob', t)
+    expect((await verifyAction({ org: 'acme.eth', action: 'revoke-member', target: 'bob', issuedAtMs: t, signature: act, allowedSigners: [owner.address], nowMs: now })).ok).toBe(false)
+  })
+})

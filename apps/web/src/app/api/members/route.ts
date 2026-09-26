@@ -1,23 +1,32 @@
-import { DEPLOYMENT, listMembers, memberName, readText } from '@kakunin/core'
-import { cached, getDirectory, json, pub } from '@/lib/server'
+import { listMembers, memberName, readText } from '@kakunin/core'
+import { hasAdminSession } from '@/lib/orgauth'
+import { cached, getDirectory, isResponse, json, orgOr404, pub } from '@/lib/server'
 
 export const dynamic = 'force-dynamic'
 
-// Members with status, role and history — everything derived from ENSv2 state + registry events.
+// GET ?org=: members with status, role and history — everything derived from ENSv2 state + registry events.
 export async function GET(req: Request) {
-  const fresh = new URL(req.url).searchParams.has('fresh')
-  const data = await cached('members', fresh ? 0 : 3000, async () => {
-    const dir = await getDirectory()
-    const members = await listMembers(pub)
+  const q = new URL(req.url).searchParams
+  const ctx = await orgOr404(q.get('org'))
+  if (isResponse(ctx)) return ctx
+  const data = await cached(`members:${ctx.name}`, q.has('fresh') ? 0 : 3000, async () => {
+    const dir = await getDirectory(ctx)
+    const members = await listMembers(pub, ctx.d)
     return Promise.all(
       members.map(async (m) => {
-        const fqn = memberName(m.label)
+        const fqn = memberName(m.label, ctx.d)
         const active = m.status === 'active'
-        const [role, since] = active ? await Promise.all([readText(pub, fqn, 'org.role'), readText(pub, fqn, 'org.since')]) : [null, null]
+        const [role, since] = active ? await Promise.all([readText(pub, fqn, 'org.role', ctx.d), readText(pub, fqn, 'org.since', ctx.d)]) : [null, null]
         const d = dir.find((e) => e.label === m.label)
         return { ...m, fqn, role, since, telegramId: d?.telegramId ?? null, username: d?.username ?? null }
       }),
     )
   })
-  return json({ org: DEPLOYMENT.orgName, team: DEPLOYMENT.teamName, members: data })
+  // @usernames live in Kakunin's off-chain directory: only the reference (sandbox) org and signed-in admins see them.
+  const seeUsernames = ctx.demo || (await hasAdminSession(req, ctx))
+  return json({
+    org: ctx.name, team: ctx.d.teamName, owner: ctx.d.orgWallet, operator: ctx.record?.operator ?? null, demo: ctx.demo,
+    teamRegistry: ctx.d.teamRegistry, createdAt: ctx.record?.createdAt ?? null,
+    members: seeUsernames ? data : data.map((m) => ({ ...m, username: null })),
+  })
 }

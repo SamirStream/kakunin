@@ -26,7 +26,8 @@ export default function Home() {
             Fake recruiters are how crypto teams get hacked. Chasing fakes never ends, so Kakunin does the opposite: each project publishes the short list of people who are real, and anyone can check against it.
           </p>
           <div className="flex flex-wrap items-center gap-3">
-            <Link href="/demo" className="btn btn-primary !px-6 !py-3 !text-base">Watch it work</Link>
+            <Link href="/create" className="btn btn-primary !px-6 !py-3 !text-base">Create your organisation</Link>
+            <Link href="/demo" className="btn !px-6 !py-3 !text-base">Watch it work</Link>
             <a href="https://t.me/KakuninxyzBot/app" target="_blank" rel="noopener noreferrer" className="btn !px-6 !py-3 !text-base">Open in Telegram</a>
           </div>
         </div>
@@ -115,7 +116,7 @@ export default function Home() {
         <h2 className="t-hero !text-[clamp(2.4rem,6vw,5rem)] max-w-4xl pt-8">Stop guessing who is on the other end.</h2>
         <div className="flex flex-wrap gap-3">
           <Link href="/check" className="btn btn-primary !px-6 !py-3 !text-base">Check someone now</Link>
-          <Link href="/org/kakunin-demo.eth" className="btn !px-6 !py-3 !text-base">See the team dashboard</Link>
+          <Link href="/create" className="btn !px-6 !py-3 !text-base">Create your organisation</Link>
         </div>
       </section>
     </div>

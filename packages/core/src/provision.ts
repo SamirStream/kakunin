@@ -58,7 +58,7 @@ export interface ProvisionEnv {
   log?: (m: string) => void
 }
 
-export const TASKS = ['fund', 'deploy', 'commit', 'register', 'wire', 'verify'] as const
+export const TASKS = ['fund', 'deploy', 'commit', 'register', 'wire', 'tighten', 'verify'] as const
 export type Task = (typeof TASKS)[number]
 export const TASK_LABELS: Record<Task | 'done', string> = {
   fund: 'Funding the organisation key with testnet ETH',
@@ -66,6 +66,7 @@ export const TASK_LABELS: Record<Task | 'done', string> = {
   commit: 'Reserving the name (commit)',
   register: 'Registering the .eth name to your wallet',
   wire: 'Creating the team registry and publishing the attester',
+  tighten: 'Removing the operator access to the organisation root',
   verify: 'Verifying the result through the Universal Resolver',
   done: 'Done',
 }
@@ -185,7 +186,7 @@ const RUN: Record<Task, (store: Store, env: ProvisionEnv, job: ProvisionJob) => 
     const receipts = await sendMany(env, job, op, 'deploy', [
       deploy(ENSV2.resolverImpl, salt('OwnedResolver', op.address, 0n), resolverInit(ROLE.RESOLVER_SET_ADDRESS)),
       deploy(ENSV2.resolverImpl, salt('OwnedResolver', op.address, 1n), resolverInit(ROLE.RESOLVER_SET_TEXT)),
-      deploy(ENSV2.userRegistryImpl, salt('UserRegistry', namehash(job.name)), registryInit(ROLE.REGISTRAR)),
+      deploy(ENSV2.userRegistryImpl, salt('UserRegistry', namehash(job.name)), registryInit(ROLE.REGISTRAR | (ROLE.REGISTRAR << 128n))),
       deploy(ENSV2.userRegistryImpl, salt('UserRegistry', namehash(teamName)), registryInit(HR_REGISTRY_ROLES)),
       { address: ENSV2.usdc, abi: usdcAbi, functionName: 'mint', args: [op.address, price] },
       { address: ENSV2.usdc, abi: usdcAbi, functionName: 'approve', args: [ENSV2.ethRegistrar, price] },
@@ -239,10 +240,28 @@ const RUN: Record<Task, (store: Store, env: ProvisionEnv, job: ProvisionJob) => 
       { address: job.data.orgRegistry as Address, abi: registryAbi, functionName: 'register', args: ['team', job.owner, job.data.teamRegistry, job.data.teamResolver, 0n, st.expiry] },
       { address: job.data.orgResolver as Address, abi: resolverAbi, functionName: 'setAddress', args: [dnsName(job.name), 60n, op.address] },
     ])
+    next(job, 'tighten')
+  },
+
+  // 6. Least privilege: the operator needed REGISTRAR on the org registry only to create "team". It drops it (and the admin of that
+  // role) now, so afterwards it can act on the team registry and nowhere else. Best effort: the dashboard shows the live result.
+  async tighten(_store, env, job) {
+    const op = operatorOf(job, env)
+    const orgRegistry = job.data.orgRegistry as Address
+    const bits = ROLE.REGISTRAR | (ROLE.REGISTRAR << 128n)
+    const still = (await env.pub.readContract({ address: orgRegistry, abi: registryAbi, functionName: 'hasRootRoles', args: [ROLE.REGISTRAR, op.address] })) as boolean
+    if (still) {
+      try {
+        await sendMany(env, job, op, 'tighten', [{ address: orgRegistry, abi: registryAbi, functionName: 'revokeRootRoles', args: [bits, op.address] }])
+      } catch (e) {
+        job.data.tightenError = (e as Error).message.split('\n')[0].slice(0, 200)
+        delete job.data.tightenPending
+      }
+    }
     next(job, 'verify')
   },
 
-  // 6. Read it back the way any ENSv2 client would, then publish the organisation.
+  // 7. Read it back the way any ENSv2 client would, then publish the organisation.
   async verify(store, env, job) {
     const d = deploymentOf(job)
     const attester = await readAddress(env.pub, job.name, d)
@@ -267,7 +286,8 @@ export function progressOf(job: ProvisionJob) {
   const index = job.status === 'done' ? TASKS.length : Math.max(0, TASKS.indexOf(job.step as Task))
   return {
     id: job.id, name: job.name, status: job.status, step: job.step, label: TASK_LABELS[job.step as Task | 'done'] ?? job.step,
-    index, total: TASKS.length, error: job.error ?? null, waitUntil: job.notBefore ?? null,
+    index, total: TASKS.length, error: job.error ?? null, waitMs: job.notBefore ? Math.max(0, job.notBefore - Date.now()) : 0,
+    tightenError: job.data.tightenError ?? null,
     txs: job.txs.map((t) => t.hash),
   }
 }

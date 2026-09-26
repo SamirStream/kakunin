@@ -12,6 +12,9 @@ import { findLookalike } from './lookalike'
 export const TELEGRAM_KEY = 'org.telegram.id'
 
 export interface DirectoryEntry { label: string; telegramId: string; username?: string; displayName?: string }
+/** An account an admin of the organisation confirmed as impersonating it (off-chain, per organisation). */
+export interface Impersonator { telegramId?: string; username?: string; at: number; note?: string }
+export interface CheckOptions { impersonators?: Impersonator[] }
 export interface CheckInput { telegramId?: string; username?: string; displayName?: string }
 
 export interface MemberInfo { label: string; fqn: string; role: string | null; since: string | null; telegramId: string }
@@ -34,8 +37,10 @@ export interface Proof {
 
 export type CheckResult =
   | { status: 'verified'; org: string; member: MemberInfo; attestation: Extract<VerifyResult, { valid: true }>; proof: Proof }
-  | { status: 'former'; org: string; member: MemberInfo; revokedAt: number | null }
-  | { status: 'lookalike'; org: string; lookalikeOf: { label: string; fqn: string; handle: string }; distance: number }
+  /** compromised: the organisation marked this member's account as taken over (org.status record), so even "official" messages from it are untrusted */
+  | { status: 'former'; org: string; member: MemberInfo; revokedAt: number | null; compromised?: boolean }
+  /** confirmed: an admin of the organisation confirmed a report that this account impersonates it (lookalikeOf is set when it also resembles a member) */
+  | { status: 'lookalike'; org: string; lookalikeOf?: { label: string; fqn: string; handle: string }; distance?: number; confirmed?: { at: number; note?: string } }
   | { status: 'unknown'; org: string; reason?: 'invalid-attestation' | 'no-identifier' }
 
 /** A non-verified answer only matters to an organisation when the person relates to it: an ex-member, or someone imitating a member. */
@@ -90,7 +95,7 @@ async function loadMember(r: Reader, m: MemberRecord, active: boolean) {
   return { info: { label: m.label, fqn, role, since, telegramId: id ?? '' } satisfies MemberInfo, onchainId: id }
 }
 
-export async function checkIdentity(r: Reader, input: CheckInput, directory: DirectoryEntry[]): Promise<CheckResult> {
+export async function checkIdentity(r: Reader, input: CheckInput, directory: DirectoryEntry[], opts: CheckOptions = {}): Promise<CheckResult> {
   const org = r.orgName
   const byUser = input.username ? directory.find((e) => e.username && strip(e.username) === strip(input.username!)) : undefined
   const telegramId = input.telegramId ?? byUser?.telegramId
@@ -102,7 +107,10 @@ export async function checkIdentity(r: Reader, input: CheckInput, directory: Dir
       const active = m.status === 'active'
       const { info, onchainId } = await loadMember(r, m, active)
       if (onchainId !== telegramId) continue
-      if (!active) return { status: 'former', org, member: info, revokedAt: m.revokedAt ?? null }
+      if (!active) {
+        const compromised = (await r.readTextDirect(info.fqn, 'org.status')) === 'compromised'
+        return { status: 'former', org, member: info, revokedAt: m.revokedAt ?? null, ...(compromised ? { compromised: true } : {}) }
+      }
       const [envelope, attester, state] = await Promise.all([
         r.readText(info.fqn, attestationRecordKey(TELEGRAM_KEY, org)), r.attesterAddress(), r.getState(m.label),
       ])
@@ -119,6 +127,15 @@ export async function checkIdentity(r: Reader, input: CheckInput, directory: Dir
 
   // Not a member (past or present): does the handle / display name imitate one?
   const candidates = directory.map((e) => ({ id: e.label, values: [e.username, e.displayName, e.label].filter(Boolean) as string[] }))
+  // An admin already confirmed this account as an impersonator: say so, whether or not it resembles a member.
+  const reported = (opts.impersonators ?? []).find((i) => (i.telegramId && i.telegramId === telegramId) || (i.username && input.username && strip(i.username) === strip(input.username)))
+  if (reported) {
+    const near = [input.username, input.displayName].filter(Boolean).map((q) => findLookalike(q as string, candidates)).find(Boolean)
+    return {
+      status: 'lookalike', org, confirmed: { at: reported.at, ...(reported.note ? { note: reported.note } : {}) },
+      ...(near ? { lookalikeOf: { label: near.id, fqn: fqnOf(org, near.id), handle: near.value }, distance: near.distance } : {}),
+    }
+  }
   for (const q of [input.username, input.displayName].filter(Boolean) as string[]) {
     const hit = findLookalike(q, candidates)
     if (hit) return { status: 'lookalike', org, lookalikeOf: { label: hit.id, fqn: fqnOf(org, hit.id), handle: hit.value }, distance: hit.distance }

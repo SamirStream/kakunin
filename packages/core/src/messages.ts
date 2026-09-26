@@ -16,6 +16,15 @@ export function renderResult(r: CheckResult): { emoji: string; title: string; li
         ],
       }
     case 'former':
+      if (r.compromised)
+        return {
+          emoji: '🚨',
+          title: `Compromised account of ${r.org}`,
+          lines: [
+            `${r.member.fqn}`,
+            `Marked as compromised by ${r.org} on ${day(r.revokedAt)}. Do NOT trust messages from this account, even if they look official. Confirm through another channel.`,
+          ],
+        }
       return {
         emoji: '🕓',
         title: `Former member of ${r.org}`,
@@ -25,11 +34,21 @@ export function renderResult(r: CheckResult): { emoji: string; title: string; li
         ],
       }
     case 'lookalike':
+      if (r.confirmed)
+        return {
+          emoji: '🚫',
+          title: `Reported impersonator of ${r.org}`,
+          lines: [
+            `Confirmed by ${r.org} on ${day(Math.floor(r.confirmed.at / 1000))}${r.confirmed.note ? `: ${r.confirmed.note}` : ''}.`,
+            ...(r.lookalikeOf ? [`It also imitates "${r.lookalikeOf.handle}" (${r.lookalikeOf.fqn}).`] : []),
+            'It is NOT a member. Do not run code, open files or sign anything.',
+          ],
+        }
       return {
         emoji: '⚠️',
         title: `Lookalike of a real ${r.org} member`,
         lines: [
-          `This handle imitates "${r.lookalikeOf.handle}" (${r.lookalikeOf.fqn}).`,
+          r.lookalikeOf ? `This handle imitates "${r.lookalikeOf.handle}" (${r.lookalikeOf.fqn}).` : 'This handle imitates a real member.',
           'It is NOT that person. Likely impersonation: do not run code, open files or sign anything.',
         ],
       }

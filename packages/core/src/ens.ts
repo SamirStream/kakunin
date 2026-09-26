@@ -163,6 +163,15 @@ export async function revokeMember(ctx: TxCtx, label: string, d = DEPLOYMENT) {
   return { skipped: false as const }
 }
 
+/**
+ * HR/org: a member's Telegram account was taken over. Record it publicly BEFORE revoking (text records survive unregister), so every
+ * check answers "compromised account" instead of a plain "former member". Idempotent.
+ */
+export async function markCompromised(ctx: TxCtx, label: string, d = DEPLOYMENT) {
+  await setMemberText(ctx, label, 'org.status', 'compromised', d)
+  return revokeMember(ctx, label, d)
+}
+
 /** Set a text record on a member (team resolver). Skips the tx if the value is already set. */
 export async function setMemberText(ctx: TxCtx, label: string, key: string, value: string, d = DEPLOYMENT) {
   const fqn = memberName(label, d)

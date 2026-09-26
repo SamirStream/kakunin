@@ -8,7 +8,7 @@ const ORG = 'acme.eth'
 const attester = privateKeyToAccount(generatePrivateKey())
 const OWNER = '0x914066d4845a042dbb0CE6F2f0069Db75f0C1044'
 
-async function fakeChain(opts: { aliceValid?: boolean } = {}) {
+async function fakeChain(opts: { aliceValid?: boolean; bobCompromised?: boolean } = {}) {
   const t = 1790000000
   const alice = `alice.team.${ORG}`
   const good = toBase64(await signAttestation({ name: alice, address: OWNER, key: TELEGRAM_KEY, value: '111', issuedAt: t }, attester))
@@ -22,6 +22,7 @@ async function fakeChain(opts: { aliceValid?: boolean } = {}) {
     [`${alice}|${attestationRecordKey(TELEGRAM_KEY, ORG)}`]: opts.aliceValid === false ? forged : good,
     [`bob.team.${ORG}|org.role`]: 'DevRel',
     [`bob.team.${ORG}|${TELEGRAM_KEY}`]: '222',
+    ...(opts.bobCompromised ? { [`bob.team.${ORG}|org.status`]: 'compromised' } : {}),
   }
   const reader: Reader = {
     orgName: ORG,
@@ -62,6 +63,31 @@ describe('checkIdentity', () => {
   it('impersonator with a lookalike handle -> lookalike', async () => {
     const r = await checkIdentity(await fakeChain(), { telegramId: '555', username: 'аlice_acme' }, dir)
     expect(r).toMatchObject({ status: 'lookalike', lookalikeOf: { label: 'alice' } })
+  })
+  it('a revoked member whose account was marked compromised -> former + compromised', async () => {
+    const r = await checkIdentity(await fakeChain({ bobCompromised: true }), { telegramId: '222' }, dir)
+    expect(r).toMatchObject({ status: 'former', compromised: true, member: { label: 'bob' } })
+  })
+  it('a plain former member is not flagged as compromised', async () => {
+    const r = await checkIdentity(await fakeChain(), { telegramId: '222' }, dir)
+    expect('compromised' in r).toBe(false)
+  })
+  it('an account confirmed as an impersonator is reported as such, even without resembling anyone', async () => {
+    const imp = [{ telegramId: '888', username: 'totally_unrelated', at: 1790000000000, note: 'DM job scam' }]
+    expect(await checkIdentity(await fakeChain(), { telegramId: '888' }, dir, { impersonators: imp })).toMatchObject({
+      status: 'lookalike', confirmed: { at: 1790000000000, note: 'DM job scam' },
+    })
+    expect(await checkIdentity(await fakeChain(), { username: '@Totally_Unrelated' }, dir, { impersonators: imp })).toMatchObject({ status: 'lookalike', confirmed: {} })
+  })
+  it('a confirmed impersonator that also resembles a member keeps the lookalikeOf detail', async () => {
+    const imp = [{ telegramId: '555', at: 1790000000000 }]
+    expect(await checkIdentity(await fakeChain(), { telegramId: '555', username: 'аlice_acme' }, dir, { impersonators: imp })).toMatchObject({
+      status: 'lookalike', confirmed: {}, lookalikeOf: { label: 'alice' },
+    })
+  })
+  it('the impersonator list never overrides a real member', async () => {
+    const imp = [{ telegramId: '111', at: 1 }]
+    expect((await checkIdentity(await fakeChain(), { telegramId: '111' }, dir, { impersonators: imp })).status).toBe('verified')
   })
   it('stranger -> unknown', async () => {
     expect(await checkIdentity(await fakeChain(), { telegramId: '777', username: 'random_recruiter' }, dir)).toMatchObject({ status: 'unknown' })

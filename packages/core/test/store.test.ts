@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { JsonStore, UpstashStore, createStore, usingUpstash, type Store } from '../src/store'
+import { JsonStore, UpstashStore, confirmedImpersonators, createStore, usingUpstash, type Store } from '../src/store'
 import { formatAlert, formatResult } from '../src/messages'
 
 /** Minimal in-memory Redis speaking the Upstash REST protocol (POST a JSON command array), for the commands we use. */
@@ -115,6 +115,26 @@ describe.each(backends)('Store contract: %s', (_name, make) => {
     expect((await s.forOrg('acme.eth').directory())[0].username).toBe('new')
     expect((await s.forOrg('beta.eth').directory())[0].username).toBe('new')
     expect(await s.memberOrgs('404')).toEqual([])
+  })
+  it('reports: merged per account, per-organisation, decided by an admin', async () => {
+    const s = make()
+    const a = s.forOrg('acme.eth'), b = s.forOrg('beta.eth')
+    const r1 = await a.addReport({ subject: { username: '@Fake_Alice', telegramId: '9' }, note: '  DM me for a job  ' })
+    expect(r1).toMatchObject({ status: 'pending', count: 1, subject: { username: 'fake_alice', telegramId: '9' }, note: 'DM me for a job' })
+    const r2 = await a.addReport({ subject: { telegramId: '9' } })
+    expect(r2.id).toBe(r1.id)
+    expect(r2.count).toBe(2)
+    expect((await a.reports())).toHaveLength(1)
+    expect(await b.reports()).toEqual([])
+    expect(await s.reports()).toEqual([]) // the sample org is separate
+    expect((await a.decideReport(r1.id, 'confirmed'))?.status).toBe('confirmed')
+    expect(await b.decideReport(r1.id, 'confirmed')).toBeNull() // cannot decide another org's report
+    expect(confirmedImpersonators(await a.reports())).toMatchObject([{ telegramId: '9', username: 'fake_alice', note: 'DM me for a job' }])
+    await a.decideReport(r1.id, 'dismissed')
+    expect(confirmedImpersonators(await a.reports())).toEqual([])
+    const again = await a.addReport({ subject: { telegramId: '9' } }) // a dismissed report does not swallow new ones
+    expect(again.id).not.toBe(r1.id)
+    expect(again.status).toBe('pending')
   })
   it('org records, name claims and provisioning jobs', async () => {
     const s = make()

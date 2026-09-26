@@ -35,7 +35,7 @@ await step('1. stranger "recruiter from KakuninDemo" -> unknown', async () => {
 })
 await step('2. lookalike of alice -> lookalike', async () => {
   const r = await check({ telegramId: '555', username: 'alice_kakunn' })
-  expect(r.status === 'lookalike' && r.lookalikeOf.label === 'alice', `got ${r.status}`)
+  expect(r.status === 'lookalike' && r.lookalikeOf?.label === 'alice', `got ${r.status}`)
 })
 await step('3. the real alice -> verified, attestation signed by the org ENS name', async () => {
   const r = await check({ telegramId: '100000001' })

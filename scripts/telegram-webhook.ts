@@ -14,7 +14,7 @@ if (!token || token === 'placeholder') throw new Error('TELEGRAM_BOT_TOKEN missi
 const api = (method: string, body?: object) =>
   fetch(`https://api.telegram.org/bot${token}/${method}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body ?? {}) }).then((r) => r.json() as Promise<{ ok: boolean; result?: any; description?: string }>)
 
-const [cmd = 'info', base = process.env.PUBLIC_URL ?? 'https://kakunin-phi.vercel.app'] = process.argv.slice(2)
+const [cmd = 'info', base = process.env.PUBLIC_URL ?? 'https://kakunin.xyz'] = process.argv.slice(2)
 
 if (cmd === 'set') {
   // The webhook secret must be the SAME value in .env and in the Vercel environment (TELEGRAM_WEBHOOK_SECRET).

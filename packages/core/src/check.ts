@@ -15,8 +15,25 @@ export interface DirectoryEntry { label: string; telegramId: string; username?: 
 export interface CheckInput { telegramId?: string; username?: string; displayName?: string }
 
 export interface MemberInfo { label: string; fqn: string; role: string | null; since: string | null; telegramId: string }
+
+/** Everything a third party needs to re-verify a "verified" answer without trusting Kakunin. */
+export interface Proof {
+  chain: 'sepolia'
+  /** the member's ENS name, and the address that manages it (the org) */
+  name: string
+  owner: Address
+  /** who signed: the org's ENS name and the address it currently resolves to */
+  attesterName: string
+  attester: Address
+  /** text record that holds the envelope, and the envelope itself (base64 CBOR, draft ENSIP "Text Record Attestations") */
+  recordKey: string
+  envelope: string
+  teamRegistry: Address
+  teamResolver: Address
+}
+
 export type CheckResult =
-  | { status: 'verified'; org: string; member: MemberInfo; attestation: Extract<VerifyResult, { valid: true }> }
+  | { status: 'verified'; org: string; member: MemberInfo; attestation: Extract<VerifyResult, { valid: true }>; proof: Proof }
   | { status: 'former'; org: string; member: MemberInfo; revokedAt: number | null }
   | { status: 'lookalike'; org: string; lookalikeOf: { label: string; fqn: string; handle: string }; distance: number }
   | { status: 'unknown'; org: string; reason?: 'invalid-attestation' | 'no-identifier' }
@@ -85,7 +102,12 @@ export async function checkIdentity(r: Reader, input: CheckInput, directory: Dir
       ])
       if (!envelope || !attester) return { status: 'unknown', org, reason: 'invalid-attestation' }
       const res = await verifyAttestation({ name: info.fqn, address: state.owner, key: TELEGRAM_KEY, value: telegramId }, envelope, attester)
-      return res.valid ? { status: 'verified', org, member: info, attestation: res } : { status: 'unknown', org, reason: 'invalid-attestation' }
+      if (!res.valid) return { status: 'unknown', org, reason: 'invalid-attestation' }
+      const proof: Proof = {
+        chain: 'sepolia', name: info.fqn, owner: state.owner, attesterName: org, attester,
+        recordKey: attestationRecordKey(TELEGRAM_KEY, org), envelope, teamRegistry: DEPLOYMENT.teamRegistry, teamResolver: DEPLOYMENT.teamResolver,
+      }
+      return { status: 'verified', org, member: info, attestation: res, proof }
     }
   }
 

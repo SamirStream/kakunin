@@ -18,8 +18,8 @@ Telegram allows either a webhook or polling, never both: while the webhook is se
 1. **Environment variables.** Run `pnpm vercel:env`: it writes `.env.vercel` (gitignored) from your local `.env` and prints variable NAMES only. In Vercel: Project → Settings → Environment Variables → **Import .env**, paste the file, save. Delete `.env.vercel` afterwards.
 2. **Persistent store.** Vercel → Storage (or Marketplace) → **Upstash Redis** → create → connect to this project (it adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` automatically).
 3. **Redeploy** the latest commit (Deployments → ⋯ → Redeploy).
-4. **Move the bot to the cloud.** Stop the local bot, then `pnpm webhook:set https://kakunin-phi.vercel.app`.
-5. **Verify.** `pnpm cloud:check https://kakunin-phi.vercel.app` (add `--agent` to also run one approved + one blocked payment: 0.001 USDC, 4 Intercepta calls). It prints what is configured and what is still missing.
+4. **Move the bot to the cloud.** Stop the local bot, then `pnpm webhook:set https://kakunin.xyz`.
+5. **Verify.** `pnpm cloud:check https://kakunin.xyz` (add `--agent` to also run one approved + one blocked payment: 0.001 USDC, 4 Intercepta calls). It prints what is configured and what is still missing.
 
 Go back to local polling at any time: `pnpm webhook:delete`, then `pnpm bot`.
 

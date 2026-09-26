@@ -1,10 +1,10 @@
 // Tests a deployed Kakunin site end to end (read-only except the agent run) and says exactly what is missing.
-//   pnpm cloud:check [https://kakunin-phi.vercel.app]
+//   pnpm cloud:check [https://kakunin.xyz]
 import { config } from 'dotenv'
 import { fileURLToPath } from 'node:url'
 config({ path: fileURLToPath(new URL('../.env', import.meta.url)), quiet: true })
 
-const base = (process.argv[2] ?? process.env.PUBLIC_URL ?? 'https://kakunin-phi.vercel.app').replace(/\/$/, '')
+const base = (process.argv[2] ?? process.env.PUBLIC_URL ?? 'https://kakunin.xyz').replace(/\/$/, '')
 let bad = 0
 const line = (ok: boolean | null, name: string, extra = '') => { if (ok === false) bad++; console.log(`${ok === null ? ' -- ' : ok ? ' ok ' : 'FAIL'}  ${name}${extra ? '  ' + extra : ''}`) }
 const get = (p: string) => fetch(base + p, { signal: AbortSignal.timeout(20000) })

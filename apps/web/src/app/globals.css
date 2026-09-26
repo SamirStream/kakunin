@@ -1,30 +1,38 @@
 @import "tailwindcss";
 
+/* Kakunin brand: warm paper, ink, and one vermilion (the hanko seal). Semantic colours (ok / warn / bad) stay separate from the brand
+   so a red brand never reads as "danger". */
 :root {
-  --bg: #f7f7f5;
-  --panel: #ffffff;
-  --ink: #16181d;
-  --muted: #5d6572;
-  --line: #e2e4e8;
-  --accent: #1f4fd8;
+  --bg: #f3efe6;
+  --panel: #fbf9f4;
+  --ink: #15171c;
+  --muted: #5e5a52;
+  --line: #ddd5c4;
+  --brand: #c8412b;
+  --accent: #c8412b;
+  --primary: #15171c;
+  --on-primary: #f3efe6;
   --ok: #0f7a4a;
-  --ok-bg: #e6f5ee;
-  --warn: #a15c00;
-  --warn-bg: #fff3dc;
+  --ok-bg: #e3f1e8;
+  --warn: #8f5200;
+  --warn-bg: #fbeed2;
   --bad: #b3261e;
-  --bad-bg: #fdeceb;
+  --bad-bg: #fbe6e2;
   --info: #3b4a63;
-  --info-bg: #eef1f6;
+  --info-bg: #ebe7dc;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f1115;
-    --panel: #171a21;
-    --ink: #eceef2;
-    --muted: #98a1b0;
-    --line: #2a2f3a;
-    --accent: #7ea2ff;
+    --bg: #15171c;
+    --panel: #1d2027;
+    --ink: #f3efe6;
+    --muted: #a39e92;
+    --line: #2e323b;
+    --brand: #d9503a;
+    --accent: #e2684f;
+    --primary: #f3efe6;
+    --on-primary: #15171c;
     --ok: #4cd08d;
     --ok-bg: #12261d;
     --warn: #f2b45a;
@@ -32,17 +40,20 @@
     --bad: #ff8a80;
     --bad-bg: #2e1715;
     --info: #b5c0d6;
-    --info-bg: #1b2130;
+    --info-bg: #232833;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0f1115;
-  --panel: #171a21;
-  --ink: #eceef2;
-  --muted: #98a1b0;
-  --line: #2a2f3a;
-  --accent: #7ea2ff;
+  --bg: #15171c;
+  --panel: #1d2027;
+  --ink: #f3efe6;
+  --muted: #a39e92;
+  --line: #2e323b;
+  --brand: #d9503a;
+  --accent: #e2684f;
+  --primary: #f3efe6;
+  --on-primary: #15171c;
   --ok: #4cd08d;
   --ok-bg: #12261d;
   --warn: #f2b45a;
@@ -50,34 +61,38 @@
   --bad: #ff8a80;
   --bad-bg: #2e1715;
   --info: #b5c0d6;
-  --info-bg: #1b2130;
+  --info-bg: #232833;
   color-scheme: dark;
 }
 
 body {
   background: var(--bg);
   color: var(--ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+  font-family: var(--font-sans), "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+.font-jp { font-family: var(--font-jp), "Noto Serif JP", "Hiragino Mincho ProN", serif; }
+a { text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
+
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
   border-radius: 10px; padding: .55rem .95rem; font-weight: 600; font-size: .9rem;
   border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer;
-  transition: transform .08s ease, background .15s ease;
+  transition: transform .08s ease, background .15s ease, filter .15s ease;
 }
 .btn:hover { background: var(--info-bg); }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
-.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.btn-primary:hover { background: var(--accent); filter: brightness(1.08); }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
+.btn-primary:hover { background: var(--primary); filter: brightness(1.15); }
 .btn-danger { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, var(--line)); }
 .input {
   width: 100%; border-radius: 10px; border: 1px solid var(--line); background: var(--panel);
   color: var(--ink); padding: .6rem .8rem; font-size: .95rem;
 }
-.input:focus { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 1px; }
+.input:focus { outline: 2px solid color-mix(in srgb, var(--brand) 55%, transparent); outline-offset: 1px; }
 .pill { display: inline-flex; align-items: center; gap: .35rem; border-radius: 999px; padding: .15rem .6rem; font-size: .78rem; font-weight: 600; }
 .pill-ok { background: var(--ok-bg); color: var(--ok); }
 .pill-bad { background: var(--bad-bg); color: var(--bad); }
@@ -86,4 +101,4 @@ body {
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .82rem; }
 @keyframes pop { from { opacity: 0; transform: translateY(6px) scale(.985); } to { opacity: 1; transform: none; } }
 .pop { animation: pop .25s ease both; }
-@media (prefers-reduced-motion: reduce) { .pop { animation: none; } .btn { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .pop { animation: none; } .btn { transition: none; } .animate-pulse { animation: none; } }

@@ -4,7 +4,7 @@
 
 > Testnet only (Sepolia). No mainnet funds are ever used.
 
-**Live demo: <https://kakunin-phi.vercel.app>** · try [a lookalike](https://kakunin-phi.vercel.app/check?who=alice_kakunn), [the real Alice](https://kakunin-phi.vercel.app/check?who=100000001), the [scripted demo](https://kakunin-phi.vercel.app/demo?run=all) and the [org dashboard](https://kakunin-phi.vercel.app/org/kakunin-demo.eth). Telegram bot: [@KakuninxyzBot](https://t.me/KakuninxyzBot).
+**Live demo: <https://kakunin.xyz>** · try [a lookalike](https://kakunin.xyz/check?who=alice_kakunn), [the real Alice](https://kakunin.xyz/check?who=100000001), the [scripted demo](https://kakunin.xyz/demo?run=all) and the [org dashboard](https://kakunin.xyz/org/kakunin-demo.eth). Telegram bot: [@KakuninxyzBot](https://t.me/KakuninxyzBot).
 
 ## The problem
 
@@ -30,6 +30,13 @@ Three sides:
 - **Project (org):** owns `kakunin-demo.eth`; the team lives in its own registry `team.kakunin-demo.eth`. An **HR wallet** registers/revokes members through ENSv2 Enhanced Access Control **without controlling the root name**.
 - **Member:** HR adds them, the app produces a one-time Telegram deep link, the member opens it from their own account; the bot captures the **numeric Telegram user ID** (never the mutable @username as identity) and the org attests it on ENS. No wallet needed for members.
 - **Victim (free, public):** forward a suspicious message to the bot, or use the `/check` web page.
+
+## Public API, verifiable profiles and badges
+
+- **API v1** (no key, CORS open, 60 req/min): [`/api/v1/check?telegramId=100000001`](https://kakunin.xyz/api/v1/check?telegramId=100000001) returns one of four verdicts plus, for verified members, a **proof** (registry, resolver, signed envelope, attester) that anyone can re-check without trusting Kakunin. [`/api/v1/org/kakunin-demo.eth`](https://kakunin.xyz/api/v1/org/kakunin-demo.eth) lists the published team (no Telegram IDs). OpenAPI 3.1: [`/api/v1/openapi.json`](https://kakunin.xyz/api/v1/openapi.json). Docs and a 10-line verification snippet: [kakunin.xyz/docs](https://kakunin.xyz/docs).
+- **Profile pages** [`/v/alice`](https://kakunin.xyz/v/alice): what Kakunin can prove about a member, the attested numeric Telegram ID, and an explicit warning that a link alone does not prove who you are talking to (compare the ID).
+- **Live badge** `![Kakunin](https://kakunin.xyz/api/badge/alice)` (SVG, refreshed every minute).
+- **Brand**: the hanko seal (red seal, kanji 確) on a paper/ink/vermilion palette; sources in [`docs/brand/`](docs/brand/).
 
 ## Screenshots
 
@@ -171,7 +178,7 @@ This project is built by the team **with** AI assistance, as allowed by the even
 
 ## Team
 
-Samir: builder (GitHub [@SamirStream](https://github.com/SamirStream)).
+**Samir Touinssi**, CEO of [The Arch](https://thearch.consulting): builder (GitHub [@SamirStream](https://github.com/SamirStream)). Powered by the CEO of [thearch.consulting](https://thearch.consulting).
 
 ## License
 

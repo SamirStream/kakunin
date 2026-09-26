@@ -107,7 +107,7 @@ describe('createStore', () => {
 describe('messages', () => {
   it('renders the four statuses with their emoji', () => {
     const member = { label: 'a', fqn: 'a.team.o.eth', role: 'Eng', since: '2024-01-01', telegramId: '1' }
-    expect(formatResult({ status: 'verified', org: 'o.eth', member, attestation: { valid: true, signer: '0x0000000000000000000000000000000000000001', issuedAt: 1790000000, version: 1 } })).toMatch(/^✅/)
+    expect(formatResult({ status: 'verified', org: 'o.eth', member, attestation: { valid: true, signer: '0x0000000000000000000000000000000000000001', issuedAt: 1790000000, version: 1 }, proof: { chain: 'sepolia', name: 'a.team.o.eth', owner: '0x0000000000000000000000000000000000000002', attesterName: 'o.eth', attester: '0x0000000000000000000000000000000000000001', recordKey: 'attestations[org.telegram.id][o.eth]', envelope: 'AAA', teamRegistry: '0x0000000000000000000000000000000000000003', teamResolver: '0x0000000000000000000000000000000000000004' } })).toMatch(/^✅/)
     expect(formatResult({ status: 'former', org: 'o.eth', member, revokedAt: 1790000000 })).toMatch(/^🕓.*\n.*revoked on 2026-/s)
     expect(formatResult({ status: 'lookalike', org: 'o.eth', lookalikeOf: { label: 'a', fqn: 'a.team.o.eth', handle: 'alice' }, distance: 1 })).toMatch(/^⚠️/)
     expect(formatResult({ status: 'unknown', org: 'o.eth' })).toMatch(/^❓/)

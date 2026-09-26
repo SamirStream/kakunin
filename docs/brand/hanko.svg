@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240" role="img" aria-label="Kakunin hanko seal">
+  <style>@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@700&amp;display=swap'); text{font-family:'Noto Serif JP',serif}</style>
+  <g transform="rotate(-4 120 120)">
+    <rect x="12" y="12" width="216" height="216" rx="36" fill="#C8412B"/>
+    <rect x="28" y="28" width="184" height="184" rx="24" fill="none" stroke="#F3EFE6" stroke-width="4"/>
+    <text x="120" y="172" text-anchor="middle" font-weight="700" font-size="150" fill="#F3EFE6">確</text>
+  </g>
+</svg>

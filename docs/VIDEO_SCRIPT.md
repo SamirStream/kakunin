@@ -1,65 +1,77 @@
-# Demo video script (about 3:50, spoken English)
+# Demo video script (target 2:50, well under the 4 minute limit)
 
-Read it aloud at a calm pace (about 130 words per minute, about 500 spoken words). Cues in *italics* are actions on screen (in French, for you). Record voice and screen together, then cut every wait.
+Rules this script follows: **brief, concise, show don't tell.** The video plays during your judging slot, so it must be a full summary of what you built. Every scene is something happening on screen; the voice says one short thing per scene; captions carry the facts. About 330 spoken words (about 2:35 at a calm pace), the rest is silence while the screen works.
 
-Before recording: `pnpm cloud:check https://kakunin.xyz` is green, demo token pasted in `/demo`, browser at 1280x720 or larger, notifications off, no `.env` or Vercel tab visible. For the creation scene, use a fresh name you have not used (for example `thearch`) and a wallet you control; start the run first, record the rest of the scene while it works, and cut the wait in editing (real duration: about 2.5 minutes).
+Record the screen at 1280x720 or more. Voice-over can be recorded after the screen, scene by scene, which is easier than talking live. Cut every wait: the only wait you show is the creation time-lapse (with a visible timer).
+
+Before recording: `pnpm cloud:check https://kakunin.xyz` is green, demo token pasted in `/demo`, notifications off, no `.env`, Vercel tab or token field visible. For the creation scene use a fresh free name (for example `thearch`) and your own wallet. Start the run first, record the other scenes while it works, and use the finished result.
+
+Legend: **CAPTION** = text burned into the video (large, 3 to 6 words). *Écran* = what to show (in French, for you).
+
+---
+
+## 1. 0:00 to 0:12 — The promise  (landing, first screen)
+
+*Écran : kakunin.xyz, le tampon 偽 se pose sur le faux message de recruteur.*
+**CAPTION:** "Is this recruiter really from that project?"
+
+Voice: "Fake recruiters drain crypto teams. Kakunin answers in one second, from ENSv2."
+
+## 2. 0:12 to 0:35 — It works  (/demo)
+
+*Écran : scénario 2 (`@alice_kakunn`) → tampon 偽 « Lookalike » + l'alerte à droite. Puis scénario 3 (Alice) → tampon 確 « Verified », ouvre « Check the proof yourself ».*
+**CAPTION:** "Lookalike caught" then "Verified, with a proof anyone can check"
+
+Voice: "A lookalike: caught, and the project is alerted. The real Alice: verified, signed by the organization's own ENS name."
+
+## 3. 0:35 to 1:15 — Any project can join  (/create, time-lapse)
+
+*Écran : tape `thearch`, disponibilité verte, « Use my browser wallet », « Create ». Time-lapse de la checklist avec un chrono à l'écran (2:35 → accéléré à ~15 s). Fin : « thearch.eth is live », puis « Open your dashboard ».*
+**CAPTION:** "Created live on ENSv2 Sepolia · 12 transactions · 2 min 35 · gas sponsored"
+
+Voice: "And it's not one demo organization. Any project creates its own. The name is registered to its wallet, not to us."
+
+## 4. 1:15 to 1:45 — Least privilege, on-chain  (dashboard de la nouvelle org)
+
+*Écran : « Sign in with wallet » (une signature). Panneau Delegation : équipe « allowed », racine « denied ». « Add member » (carol) → ligne apparaît ; « Revoke » → « former · revoked ». Coupe les attentes.*
+**CAPTION:** "Operator: team only · root: denied" then "Added. Revoked. No gas for the admin."
+
+Voice: "One signature to add or revoke. The operator can run the team and nothing else, and the roles are read live from the chain."
+
+## 5. 1:45 to 2:20 — Where the attack happens  (téléphone : Mini App Telegram)
+
+*Écran : enregistrement du téléphone. Mini App → « My card » (tampon vérifié). Onglet Check → sélecteur de contact → un faux recruteur → 偽. Puis retour sur l'ordinateur : l'alerte apparaît dans le dashboard.*
+**CAPTION:** "Telegram Mini App · identity = numeric ID"
+
+Voice: "In Telegram, Telegram itself signs who you are. Pick a contact and Kakunin checks every project."
+
+## 6. 2:20 to 2:45 — Agents  (/demo, section 5)
+
+*Écran : clique « Run agent purchases ». Le paiement approuvé (PAID, score 0), puis le clone bloqué (REFUSED, sanction_address, known_scammer).*
+**CAPTION:** "x402 agent · Intercepta screening before signing"
+
+Voice: "Agents buy this check per call. Before signing, a policy checks the token, the amount and the payee with Intercepta. One paid, one refused, and it never pays when unsure."
+
+## 7. 2:45 to 2:55 — What was built  (écran de synthèse)
+
+*Écran : une seule diapositive (fond washi) : « Kakunin 確認 », kakunin.xyz, github.com/SamirStream/kakunin, et trois lignes : « ENSv2: registries, EAC, attestations · Intercepta: screened x402 agent · Telegram bot + Mini App + API ».*
+**CAPTION:** (la diapositive elle-même)
+
+Voice: "Kakunin. Open source, live at kakunin.xyz."
 
 ---
 
-## 0:00 to 0:20 — Hook  (kakunin.xyz, landing page)
+## Si tu dépasses 3 minutes, coupe dans cet ordre
 
-*Page d'accueil, le tampon se pose sur le message du faux recruteur.*
-
-"Fake recruiters are how crypto teams get hacked: someone says they work for a project, and a developer believes them. Chasing fakes never ends, so Kakunin does the opposite. Each project publishes the short list of people who are real, on ENSv2, and anyone can check against it."
-
-## 0:20 to 0:50 — Check  (/demo, scenarios 2 and 3)
-
-*Scénario 2 `@alice_kakunn` → Lookalike (montre l'alerte). Scénario 3 → Verified, ouvre le panneau de preuve.*
-
-"A handle one letter off from a real teammate: lookalike, and the project gets an alert. And the real Alice: verified. This isn't our database talking. The organization's own ENS name signed this identity, and anyone can re-check the proof."
-
-## 0:50 to 1:35 — Any project can join  (/create)
-
-*Tape `thearch`, clique « Use my browser wallet », dispo verte, « Create my organisation ». Laisse défiler la checklist (accélère au montage), puis « Open your dashboard ».*
-
-"And it isn't one demo organization. Any project can create its own. Pick a name and the wallet that will own it. Kakunin registers the name to that wallet through the ENS registrar, then deploys the registries and resolvers on ENSv2, and gives a limited operator key just enough rights to run the team. About two and a half minutes, on Sepolia, gas sponsored. Here it is: the name belongs to my wallet, not to Kakunin."
-
-## 1:35 to 2:05 — ENSv2 delegation  (dashboard of the new org, panneau Delegation)
-
-*Descends au panneau Delegation : équipe « allowed », racine « denied ». Signe avec le wallet (« Sign in with wallet »).*
-
-"The delegation panel reads the access-control roles live from the chain. The operator can register and revoke members on the team registry, and it is denied everywhere on the organization's root. I can take its rights away on-chain whenever I want. Signing in costs no gas: I sign, and the operator sends the transactions."
-
-## 2:05 to 2:35 — Add and revoke  (dashboard : Add member, puis Revoke)
-
-*Ajoute `carol` (rôle Engineer) : signature, ~25 s (coupe l'attente). Clique Revoke (signature) et montre « former · revoked » (coupe l'attente).*
-
-"Adding a member is one signature and one Telegram link. Revoking is the same. The team is public on ENS, so the moment someone is revoked, every answer changes: former member, with the date, read from ENSv2 events."
-
-## 2:35 to 3:05 — Telegram  (téléphone : Mini App)
-
-*Ouvre la Mini App : My card → tampon vérifié. Puis Check → sélecteur de contact → résultat « any project ». Optionnel : montre l'onglet Team d'un admin.*
-
-"Attacks happen on Telegram, so the check lives there. The Mini App is authenticated by Telegram's own signed data, so nobody can request someone else's card. Pick a contact and Kakunin looks them up across every project on the network. Your identity is your numeric Telegram ID, never a username, because usernames can be changed to impersonate someone."
-
-## 3:05 to 3:35 — AI agents  (/demo, section 5, « Run agent purchases »)
-
-*Clique Run agent purchases. Montre le paiement approuvé, puis le clone bloqué avec les raisons.*
-
-"Agents can buy this check per call over x402, and this one follows a written policy. Before it signs, it checks the token is the real USDC, the amount is within its limits, and it screens the destination with the live Intercepta API. The real endpoint scores clean and gets paid. The clone is flagged, sanctioned address and known scammer, and the payment is refused before anything is signed. If the screening fails, it never pays: it asks a human."
-
-## 3:35 to 3:50 — Close  (landing)
-
-*Retour sur la landing.*
-
-"Kakunin is open source and running live at kakunin.xyz. Free for people, alerts for projects, per-call checks for agents. Thank you."
-
----
+1. Scène 5, la partie ordinateur (l'alerte), puis la scène 2 (garde seulement le vérifié).
+2. La signature de connexion de la scène 4 (montre juste le panneau Delegation).
+3. Jamais la scène 3 (création live) ni la scène 6 (agent) : ce sont vos deux preuves les plus fortes.
 
 ## Notes de tournage
 
+- Une idée par scène, un mouvement à l'écran à la fois, curseur calme, zoom sur les tampons et sur « denied / allowed ».
 - Ne dis pas « mock ». Tout est réel sur Sepolia, sauf les deux IDs Telegram de démo (Alice et Bob) : dis « demo members ».
-- Si une étape échoue en direct, refais la prise. Ne montre jamais une erreur sans l'expliquer.
-- Le wizard poursuit le run même si tu quittes la page (localStorage) : tu peux le lancer, tourner d'autres scènes, puis revenir.
-- Pitch en direct : un juge scanne le QR d'invitation d'un membre (dashboard → Invite) avec son propre Telegram, ou tu lances la création d'une organisation pendant que tu parles (environ 2,5 min : 137 à 155 s mesurées).
-- Le chiffre d'accroche de la version précédente (avis NPA/FBI du 18 sept 2026) a été retiré : ne le cite que si tu as vérifié la source.
+- Le nom choisi doit être libre sur ENSv2 Sepolia (le champ le dit en vert). Environ 2 min 35 mesurées (137 à 155 s selon les runs).
+- Ne cite pas de chiffre externe dans la vidéo. Si tu veux un chiffre d'accroche, l'avis NPA/FBI du 18 sept 2026 est vérifié (source : advisory FBI IC3 260918, au moins 30 000 appareils, plus de 7 000 wallets, 1,7 milliard de yens), mais ce n'est pas nécessaire.
+- Pitch en direct devant les juges : un juge scanne le QR d'invitation d'un membre (dashboard → Invite) avec son propre Telegram.
+- Vérifie ce que tu montres : aucun @username ni ID personnel visible, pas de token, pas de clé.

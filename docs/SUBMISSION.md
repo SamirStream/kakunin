@@ -105,20 +105,19 @@ Kakunin was built with Claude Code (Anthropic) writing most of the code, tests a
 12. **How does the agent avoid a lookalike token?** It only accepts the canonical USDC address per network (`POLICY.trustedAssets`), whatever the server advertises. On networks the Intercepta Scan Token API covers (mainnets, not testnets), it also asks that API and refuses or holds a risky token; a scan error fails closed.
 13. **Are agents ENS namespaces?** Not yet: the agent has its own wallet only. Giving it a subname with delegated roles is the natural next step.
 
-## Demo video storyboard (about 3:50, 720p or more, edit out waiting)
+## Demo video storyboard (target 2:50, 720p or more, brief, show don't tell)
 
-Same timeline as `docs/VIDEO_SCRIPT.md`, which has the word-for-word narration.
+Same seven scenes and timings as `docs/VIDEO_SCRIPT.md` (which has the captions and the short voice-over lines).
 
-| Time | Show | Say (short) |
+| Time | Show | Voice (short) |
 |---|---|---|
-| 0:00 | kakunin.xyz hero, stamp lands on the fake recruiter's message | "Fake recruiters are how crypto teams get hacked. Kakunin certifies the real ones, on ENSv2." |
-| 0:20 | `/demo`: `@alice_kakunn` (lookalike, alert), then Alice (verified), proof panel | "Every answer is a stamp with a reason, and a proof anyone can re-check." |
-| 0:50 | `/create`: name plus owner wallet, the progress checklist (wait cut in editing) | "Any project can create its own organisation: the name goes to its wallet, a limited operator runs the team." |
-| 1:35 | New dashboard: sign in with the wallet, Delegation panel (operator allowed on the team, denied on the root) | "The roles are read live from the chain, and the owner can remove the operator on-chain." |
-| 2:05 | Add a member, then revoke it (waits cut) | "One signature to add or revoke; every answer flips to former member with the date." |
-| 2:35 | Telegram on the phone: Mini App card, contact picker, check across all projects | "Where the attack happens; Telegram signs who you are, and identity is the numeric ID." |
-| 3:05 | `/demo` section 5: agent pays the real API, refuses the clone with Intercepta's reasons | "A policy-aware agent: token, amount and counterparty checked before it signs; it fails closed." |
-| 3:35 | Landing | "Open source and live at kakunin.xyz." |
+| 0:00 | Landing, the stamp lands on the fake recruiter's message | "Fake recruiters drain crypto teams. Kakunin answers in one second, from ENSv2." |
+| 0:12 | `/demo`: lookalike caught with an alert, then the real Alice verified with proof | "Caught, and the project is alerted. Verified, signed by the organization's own ENS name." |
+| 0:35 | `/create` time-lapse with a visible timer, then the live dashboard | "Any project creates its own. The name is registered to its wallet, not to us." |
+| 1:15 | Sign in, Delegation panel (operator allowed on the team, denied on the root), add and revoke a member | "One signature. The operator runs the team and nothing else, read live from the chain." |
+| 1:45 | Phone: Mini App card, contact picker, check across all projects | "Telegram signs who you are. Pick a contact and Kakunin checks every project." |
+| 2:20 | `/demo` section 5: one payment through, one blocked with the reasons | "A policy-aware agent: token, amount and payee checked before it signs; one paid, one refused." |
+| 2:45 | One summary slide with the links | "Kakunin. Open source, live at kakunin.xyz." |
 
 Recording checklist: 1280x720 or larger, no waiting (cut it), show the live URL in the address bar, keep the cursor calm, no secrets on screen (the `.env` file, the admin token field, the Vercel dashboard).
 

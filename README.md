@@ -54,7 +54,7 @@ Why a Mini App changes the security model: Telegram signs `initData` with a key 
 
 ## Screenshots
 
-Live against the Sepolia deployment at [kakunin.xyz](https://kakunin.xyz) (dark theme shown; the UI follows the system theme and is mobile-friendly).
+Live against the Sepolia deployment at [kakunin.xyz](https://kakunin.xyz) (light theme shown; the UI follows the system theme, has a manual toggle, and is mobile-friendly).
 
 | Home: try it in one second | Verifiable profile |
 |---|---|
@@ -64,9 +64,9 @@ Live against the Sepolia deployment at [kakunin.xyz](https://kakunin.xyz) (dark 
 |---|---|
 | ![Live demo](docs/screenshots/demo.png) | ![Org dashboard](docs/screenshots/dashboard.png) |
 
-| Lookalike caught | Verified, with proof | Mobile |
-|---|---|---|
-| ![Lookalike](docs/screenshots/check-lookalike.png) | ![Verified](docs/screenshots/check-verified.png) | <img src="docs/screenshots/check-mobile.png" width="220" alt="Mobile check"> |
+| Lookalike caught | Verified, with proof |
+|---|---|
+| ![Lookalike](docs/screenshots/check-lookalike.png) | ![Verified](docs/screenshots/check-verified.png) |
 
 | API docs |
 |---|

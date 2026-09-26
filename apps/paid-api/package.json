@@ -6,7 +6,8 @@
   "scripts": {
     "server": "tsx src/server.ts",
     "agent": "tsx src/agent.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "probe": "tsx src/probe.ts"
   },
   "dependencies": {
     "@kakunin/core": "workspace:*",

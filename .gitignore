@@ -9,3 +9,4 @@ cache/
 broadcast/
 *.session
 .DS_Store
+scripts/state.sepolia.json

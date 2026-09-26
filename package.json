@@ -1,0 +1,15 @@
+{
+  "name": "kakunin",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@12.6.0",
+  "scripts": {
+    "test": "pnpm -r --if-present test",
+    "spike:wallets": "pnpm --filter @kakunin/scripts exec tsx gen-wallets.ts",
+    "spike:ens": "pnpm --filter @kakunin/scripts exec tsx spike-ens.ts"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
+  }
+}

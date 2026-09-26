@@ -1,0 +1,14 @@
+{
+  "name": "@kakunin/scripts",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "viem": "2.56.9",
+    "dotenv": "18.0.3"
+  },
+  "devDependencies": {
+    "tsx": "4.23.15",
+    "@types/node": "22.15.0"
+  }
+}

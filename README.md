@@ -40,15 +40,23 @@ Three sides:
 
 ## Screenshots
 
-Live against the Sepolia deployment (dark theme shown; the UI follows the system theme and is mobile-friendly).
+Live against the Sepolia deployment at [kakunin.xyz](https://kakunin.xyz) (dark theme shown; the UI follows the system theme and is mobile-friendly).
 
-| Live demo (4 real checks + alerts) | Org dashboard (team, EAC delegation, alerts) |
+| Home: try it in one second | Verifiable profile |
+|---|---|
+| ![Home](docs/screenshots/landing.png) | ![Profile](docs/screenshots/profile.png) |
+
+| Live demo: four real checks + alerts | Org dashboard: team, EAC delegation, alerts |
 |---|---|
 | ![Live demo](docs/screenshots/demo.png) | ![Org dashboard](docs/screenshots/dashboard.png) |
 
-| Lookalike caught | Mobile |
-|---|---|
-| ![Lookalike](docs/screenshots/check-lookalike.png) | <img src="docs/screenshots/check-mobile.png" width="260" alt="Mobile check"> |
+| Lookalike caught | Verified, with proof | Mobile |
+|---|---|---|
+| ![Lookalike](docs/screenshots/check-lookalike.png) | ![Verified](docs/screenshots/check-verified.png) | <img src="docs/screenshots/check-mobile.png" width="220" alt="Mobile check"> |
+
+| API docs |
+|---|
+| ![API docs](docs/screenshots/docs.png) |
 
 ## How ENSv2 is used (central, not cosmetic)
 
@@ -143,7 +151,7 @@ Requirements: Node 22, pnpm.
 pnpm install
 cp .env.example .env            # then: pnpm spike:wallets  (generates throwaway testnet keys into .env)
 # fund the printed ORG and HR addresses with Sepolia ETH (faucet)
-pnpm test                       # 90 tests
+pnpm test                       # 93 tests
 pnpm rehearse                   # replays the whole demo against the live chain, with assertions
 pnpm --filter @kakunin/scripts seed      # idempotent: attester address, members, attestations (add --dry-run to preview)
 pnpm --filter @kakunin/web build && pnpm --filter @kakunin/web start   # http://localhost:3000

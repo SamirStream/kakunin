@@ -59,8 +59,14 @@ export default function CheckPage() {
         </label>
         <button className="btn btn-primary w-full" disabled={busy || !who.trim()}>{busy ? 'Checking on ENS…' : 'Check'}</button>
       </form>
-      {error && <p className="pill pill-bad">{error}</p>}
-      {result && <ResultCard result={result} />}
+      {busy && <div className="h-24 animate-pulse rounded-2xl" style={{ background: 'var(--info-bg)' }} aria-hidden />}
+      {error && <p className="pill pill-bad max-w-full whitespace-normal" role="alert">{error}</p>}
+      {result && (
+        <ResultCard
+          result={result}
+          shareUrl={typeof window === 'undefined' ? undefined : `${window.location.origin}/check?org=${encodeURIComponent(org)}&who=${encodeURIComponent(who.trim())}`}
+        />
+      )}
       <p className="text-xs" style={{ color: 'var(--muted)' }}>
         Every failed check that claims an org sends that org an impersonation alert. Prefer Telegram? Forward the message to the Kakunin bot.
       </p>

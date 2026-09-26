@@ -3,6 +3,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { DEPLOYMENT, addMember, revokeMember, setMemberText, ABIS, HR_REGISTRY_ROLES, type TxCtx } from '@kakunin/core/ens'
 import { inviteMessage } from '@kakunin/core/auth'
+import { CopyButton } from '@/components/CopyButton'
+import { InviteQR } from '@/components/InviteQR'
+import { OrgInsights } from '@/components/OrgInsights'
 import { connectWallet } from '@/lib/wallet'
 
 interface Member { label: string; fqn: string; status: 'active' | 'former'; role: string | null; since: string | null; registeredAt: number; revokedAt?: number; telegramId: string | null; username: string | null }
@@ -105,7 +108,9 @@ export default function OrgPage() {
             : <button className="btn btn-primary" onClick={connect} disabled={busy === 'connect'}>{busy === 'connect' ? 'Connecting…' : 'Connect wallet'}</button>}
         </div>
       </div>
-      {err && <p className="pill pill-bad max-w-full whitespace-normal break-words">{err}</p>}
+      {err && <p className="pill pill-bad max-w-full whitespace-normal break-words" role="alert">{err}</p>}
+
+      <OrgInsights members={members} alerts={alerts} />
 
       <section className="card overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3"><h2 className="font-bold">Team ({active.length} active)</h2><span className="text-xs" style={{ color: 'var(--muted)' }}>live from ENSv2 · refreshes every 4s</span></div>
@@ -138,10 +143,14 @@ export default function OrgPage() {
       </section>
 
       {invite && (
-        <section className="pop card space-y-2 p-5">
-          <div className="font-semibold">One-time Telegram link for {invite.label}</div>
-          <p className="mono break-all rounded-lg p-3" style={{ background: 'var(--info-bg)' }}>{invite.url}</p>
-          <p className="text-xs" style={{ color: 'var(--muted)' }}>Send it to the member. Opening it from their own Telegram binds their numeric ID and writes the attestation on ENS. Single use.</p>
+        <section className="pop card flex flex-wrap items-center gap-5 p-5">
+          <InviteQR url={invite.url} />
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="font-semibold">One-time Telegram link for {invite.label}</div>
+            <p className="mono break-all rounded-lg p-3" style={{ background: 'var(--info-bg)' }}>{invite.url}</p>
+            <div className="flex flex-wrap items-center gap-2"><CopyButton text={invite.url} label="Copy link" /><span className="text-xs" style={{ color: 'var(--muted)' }}>or let them scan the code</span></div>
+            <p className="text-xs" style={{ color: 'var(--muted)' }}>Opening it from their own Telegram binds their numeric ID and writes the attestation on ENS. Single use, valid for 7 days.</p>
+          </div>
         </section>
       )}
 

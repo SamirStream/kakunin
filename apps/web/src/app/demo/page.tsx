@@ -43,6 +43,18 @@ export default function DemoPage() {
     loadAlerts()
   }
 
+  // "Play the story": the four scenarios in order with a beat between them, so the presenter can talk instead of clicking.
+  const [playing, setPlaying] = useState(false)
+  async function play() {
+    setPlaying(true); setResults({})
+    for (const s of SCENARIOS) {
+      await check(s.id, s.body)
+      document.getElementById(`scenario-${s.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      await new Promise((r) => setTimeout(r, 1400))
+    }
+    setPlaying(false)
+  }
+
   async function act(action: 'revoke' | 'reset') {
     setBusy(action); setNote(null)
     const res = await fetch('/api/demo', { method: 'POST', headers: { 'content-type': 'application/json', ...demoHeaders() }, body: JSON.stringify({ action, label: 'bob' }) })
@@ -54,16 +66,19 @@ export default function DemoPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-extrabold">Live demo</h1>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h1 className="text-3xl font-extrabold">Live demo</h1>
+          <button className="btn btn-primary" onClick={play} disabled={playing || busy !== null}>{playing ? 'Playing…' : '▶ Play the story'}</button>
+        </div>
         <p className="mt-1 max-w-2xl text-sm" style={{ color: 'var(--muted)' }}>
-          Org <span className="mono">kakunin-demo.eth</span> on Sepolia. Each button below performs a real ENSv2 read + attestation verification.
+          Org <span className="mono">kakunin-demo.eth</span> on Sepolia. Each button below performs a real ENSv2 read + attestation verification. Nothing is mocked.
         </p>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
         <div className="space-y-5">
           {SCENARIOS.map((s) => (
-            <div key={s.id} className="card space-y-3 p-5">
+            <div key={s.id} id={`scenario-${s.id}`} className="card scroll-mt-24 space-y-3 p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <div className="font-semibold">{s.label}</div>

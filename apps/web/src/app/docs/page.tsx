@@ -63,8 +63,8 @@ curl "https://kakunin.xyz/api/v1/check?username=alice_kakunn"`}</Code>
           <tbody>
             {[
               ['verified', 'Active subname, ID matches, attestation valid. Includes proof.'],
-              ['former', 'The subname was revoked. Includes revokedAt (from the ENSv2 event).'],
-              ['lookalike', 'No member match, but the handle or name imitates one (lookalikeOf, distance).'],
+              ['former', 'The subname was revoked. Includes revokedAt (from the ENSv2 event), and compromised: true when the org marked the account as taken over.'],
+              ['lookalike', 'No member match, but the handle or name imitates one (lookalikeOf, distance), or an org admin confirmed a report about the account (confirmed: { at, note }).'],
               ['unknown', 'Not on the team. reason may be invalid-attestation, no-identifier or org-not-registered.'],
             ].map(([s, m]) => <tr key={s} className="border-t" style={{ borderColor: 'var(--line)' }}><td className="mono px-4 py-2">{s}</td><td className="px-4 py-2">{m}</td></tr>)}
           </tbody>

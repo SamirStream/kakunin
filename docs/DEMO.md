@@ -48,6 +48,7 @@ Open https://kakunin.xyz/create, type a free name, click **Use my browser wallet
 - **What if the record or the attester key changes?** The attestation is rebuilt from live ENS data, so it stops verifying (the ENSIP's design).
 - **Did you use MultiBaas (Curvegrid track)?** No, and the README says so. The track is judged on the agent: token, amount and counterparty policy before signing, fail closed (`packages/core/src/screening.ts`, `apps/paid-api/src/agent.ts`).
 - **Does the token scan run in the demo?** No: Intercepta's Scan Token covers mainnets only and our payments are on Base Sepolia, so the allowlist decides alone there. `pnpm --filter @kakunin/paid-api probe token` shows it on real USDC (Ethereum and Base).
+- **How do people report a fake or a hijacked official account?** Under any unknown or lookalike result there is **Report this account** (also `/report acme.eth @user` in the bot); under a verified result, **tell the organisation** (`/compromised`). Admins decide on their dashboard: confirming an impersonator makes every check say so, and **Compromised** writes `org.status` on-chain and revokes the member.
 - **Can I create my own organisation?** Yes, live: `/create` (about 2.5 minutes, gas sponsored on testnet).
 - **atst.me compatibility?** Our tests reproduce a real mainnet attestation byte for byte; the playground only resolves mainnet, so Sepolia demos use our own verifier.
 

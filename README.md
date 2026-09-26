@@ -22,6 +22,8 @@ A check returns one of four answers:
 | 🕓 **Former member** | HR revoked the subname; the revocation date is derived from ENSv2 events |
 | ⚠️ **Lookalike** | Handle / display name imitates a real member (NFKC, confusables, Levenshtein) |
 | ❓ **Unknown** | The org publishes its team and this person is not in it |
+| 🚫 **Reported impersonator** | Shown as a lookalike stamp when an admin of the org confirmed a public report about this account |
+| 🚨 **Compromised account** | Shown for a former member whose org marked the account as taken over (recorded on-chain) |
 
 Every failed check that claims an org raises an **impersonation alert** for that org (dashboard feed + Telegram).
 
@@ -39,6 +41,17 @@ Kakunin is not a single-org demo. [`/create`](https://kakunin.xyz/create) takes 
 - **Per-organisation everything**: directory, alerts, admins, invites. The bot and the Mini App serve all organisations: a check looks the person up everywhere, `/check acme.eth @user` checks one, and an organisation is alerted only when someone imitates one of its members or is one of its former members.
 - **Telegram admin link** from the dashboard makes an account the recipient of alerts and unlocks the Mini App team console for that organisation.
 - Provisioning is a resumable state machine (`packages/core/src/provision.ts`); `pnpm provision <label> <owner>` runs it from the CLI, and `scripts/e2e-http.ts` tests the full flow against a live deployment (create, add, onboard through Telegram initData, verify, alert, revoke).
+
+## Reporting: impersonators and compromised official accounts
+
+Anyone who meets a fake, or sees an official account behave strangely, can tell the project. **Nothing becomes public until the project's admins decide.**
+
+| Case | How to report | What the project does | What every later check says |
+|---|---|---|---|
+| **An account impersonates the project** | `/check` page (button **Report this account** under an unknown or lookalike result), the Mini App (same button), the bot (`/report acme.eth @user what happened`) or `POST /api/report` | Reviews the queue on its dashboard (**Reports from the public**, also alerted on Telegram) and **confirms** or dismisses it with a wallet signature; a confirmation can be retracted | 🚫 **Reported impersonator of acme.eth**, with the admin's date and note (web, bot, Mini App and API alike) |
+| **A verified member's account looks compromised** | The link under a verified result, the bot (`/compromised acme.eth @user`) or `POST /api/report` with `kind: "compromised"` | Presses **Compromised** on that member: Kakunin writes `org.status = compromised` on the member's ENS name, **then revokes it** (both on-chain, signed by the admin, no gas for them) | 🚨 **Compromised account of acme.eth**: do not trust messages from it, even if they look official, and confirm through another channel |
+
+Design choices: a report is only a **queue entry** (merged per account, 5 per hour and 20 per day per visitor, a verified member cannot be reported as an impersonator and only a verified member can be reported as compromised); the **decision is the admin's signed action** (`confirm-report`, `dismiss-report`, `mark-compromised`), never a vote count; and the compromised flag is an ordinary ENSv2 text record, so it is public, dated by the chain and survives the revocation. Code: [`packages/core/src/store.ts`](packages/core/src/store.ts) (`Report`, `confirmedImpersonators`), [`check.ts`](packages/core/src/check.ts) (`compromised`, `confirmed`), [`ens.ts`](packages/core/src/ens.ts) (`markCompromised`), [`/api/report`](apps/web/src/app/api/report/route.ts), [`/api/orgs/[name]/reports`](apps/web/src/app/api/orgs/%5Bname%5D/reports/route.ts). Covered by unit tests (store, check engine, bot) and by the report steps of `scripts/e2e-http.ts`.
 
 ## Public API, verifiable profiles and badges
 
@@ -193,7 +206,7 @@ Requirements: Node 22, pnpm.
 pnpm install
 cp .env.example .env            # then: pnpm spike:wallets  (generates throwaway testnet keys into .env)
 # fund the printed ORG and HR addresses with Sepolia ETH (faucet)
-pnpm test                       # 133 tests (core 105, bot 15, paid-api 13)
+pnpm test                       # 145 tests (core 112, bot 20, paid-api 13)
 pnpm provision acme 0xOwner…    # create a self-serve organisation from the CLI (same engine as /create)
 pnpm rehearse                   # replays the whole demo against the live chain, with assertions
 pnpm --filter @kakunin/scripts seed      # idempotent: attester address, members, attestations (add --dry-run to preview)

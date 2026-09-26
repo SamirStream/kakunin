@@ -31,6 +31,9 @@ export function GET() {
         get: { summary: 'Organisations on Kakunin', description: 'Public on-chain facts only: name, owner, team registry.', responses: { '200': { description: 'List of organisations' } } },
         post: { summary: 'Create an organisation (testnet, sponsored)', description: 'Body: { label, owner }. Returns a job; advance it with POST /api/orgs/jobs/{id} until status is done (about 2.5 minutes).', responses: { '201': { description: 'Job started' }, '409': { description: 'Name taken or capacity reached' }, '429': { description: 'Rate limited' } } },
       },
+      '/api/report': {
+        post: { summary: 'Report an impersonator or a compromised official account', description: 'Body: { org, kind?: "impersonation" | "compromised", telegramId? | username?, note? }. A report only reaches the organisation\'s admins; nothing is published until they confirm. 5 per hour and 20 per day per client.', responses: { '200': { description: 'Queued' }, '404': { description: 'Unknown organisation' }, '409': { description: 'A verified member cannot be reported as an impersonator; only a verified member can be reported as compromised' }, '429': { description: 'Rate limited' } } },
+      },
       '/api/orgs/available': {
         get: { summary: 'Can this ENS name be created?', parameters: [{ name: 'label', in: 'query', required: true, schema: { type: 'string', example: 'acme' } }], responses: { '200': { description: '{ ok, name, reason? }' } } },
       },

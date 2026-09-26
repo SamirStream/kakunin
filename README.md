@@ -193,7 +193,7 @@ Requirements: Node 22, pnpm.
 pnpm install
 cp .env.example .env            # then: pnpm spike:wallets  (generates throwaway testnet keys into .env)
 # fund the printed ORG and HR addresses with Sepolia ETH (faucet)
-pnpm test                       # 120 tests (core 98, bot 15, paid-api 7)
+pnpm test                       # 133 tests (core 105, bot 15, paid-api 13)
 pnpm provision acme 0xOwner…    # create a self-serve organisation from the CLI (same engine as /create)
 pnpm rehearse                   # replays the whole demo against the live chain, with assertions
 pnpm --filter @kakunin/scripts seed      # idempotent: attester address, members, attestations (add --dry-run to preview)

@@ -58,6 +58,39 @@ Attestation format: DAG-CBOR payload `{n,a,k,v,t}`, EIP-191 over `keccak256(payl
 
 See [`deployments/sepolia.json`](deployments/sepolia.json): `kakunin-demo.eth`, org registry, team registry, two resolvers (ENSv2 contract addresses are in `specs/DECISIONS.md`).
 
+## Paid check for AI agents: x402 + Intercepta screening
+
+Kakunin's check is also sold per call over **x402** (0.001 USDC, Base Sepolia). The buying agent **screens the destination with the live Intercepta API before it signs**, and the verdict decides what happens: pay, refuse, or ask a human.
+
+| What | File |
+|---|---|
+| **Live Intercepta call** (`GET api.web3antivirus.io/api/public/v2/extension/account/{address}/quick-scan`, `x-api-key`) | [`apps/paid-api/src/screener.ts`](apps/paid-api/src/screener.ts) |
+| Hook that screens `payTo` **before signing** (x402 `onBeforePaymentCreation`) and aborts on a bad verdict | [`apps/paid-api/src/agent.ts`](apps/paid-api/src/agent.ts) |
+| Decision policy: refuse lookalike tokens, spending limits, refuse high-risk `payTo`, ask a human on medium/unknown, **fail closed** if screening errors | [`packages/core/src/screening.ts`](packages/core/src/screening.ts) |
+| Paid API (seller) and a FAKE clone whose `payTo` is a flagged address | [`apps/paid-api/src/server.ts`](apps/paid-api/src/server.ts) |
+
+Real run on 2026-09-26 (`pnpm --filter @kakunin/paid-api server` then `agent`):
+
+```
+=== http://localhost:4021/check?telegramId=100000001          (real Kakunin API)
+  verdict  low, toxic score 0/100, no significant risk trait
+  decision PAY, payTo 0x9140…1044 screened low; $0.001 within limits
+  outcome  PAID  -> {"status":"verified","member":{"fqn":"alice.team.kakunin-demo.eth", ...}}
+=== http://localhost:4022/check?telegramId=100000001          (fake clone)
+  verdict  critical, toxic score 100/100; known_scammer; sanction_address; blacklist
+  decision REFUSE
+  outcome  BLOCKED, payment never signed
+```
+
+On-chain check afterwards: the agent went from 20 to 19.999 USDC and the org address received 0.001 USDC on Base Sepolia; nothing was sent to the clone. The payment runs on a testnet while the screened addresses are real mainnet addresses, as the prize asks.
+
+**Feedback on the Intercepta API (5 lines)**
+- Time to first call: about 2 minutes once the key arrived (the key itself took a few hours, we chased it in person/DM).
+- Confusing: the API reference (`docs.web3antivirus.io`) sits behind a bot challenge, so scripts and AI tools get a 403; we found the host and path through a public search and confirmed them by calling. The response shape (`toxicScore` + `traits[]`) and its thresholds are not documented where we could read them, so the pay/refuse cut-offs in our policy are our own choice.
+- Missing: quick-scan answers `404 "An Externally Owned Account with this address doesn't exist"` for contract addresses (e.g. Circle's USDC contract); many payees are contract wallets, so a contract-aware answer (or a clear "unsupported") would help agents.
+- Nice: per-trait reasons (`sanction_address`, `known_scammer`, `blacklist`) are directly displayable to a person, and latency was about 1 second.
+- Wish: a documented list of test addresses per risk class in the docs, not only in the chat channel.
+
 ## Architecture
 
 ```mermaid
@@ -113,7 +146,8 @@ The 4-minute demo script and Q&A cheat sheet are in [`docs/DEMO.md`](docs/DEMO.m
 - ✅ ENSv2 registry + EAC delegation + attestations + check engine: **verified live on Sepolia**
 - ✅ Web app (`/check`, `/org` dashboard, `/demo`), tested against the live chain
 - ✅ Telegram bot logic (onboarding, forwarded messages, alerts): unit-tested; live run needs a bot token
-- ⏳ Curvegrid MultiBaas indexing, Intercepta/x402: see `specs/DECISIONS.md`
+- ✅ x402 paid check + agent screened by the live Intercepta API (one payment approved, one blocked): tested on Base Sepolia
+- ⏳ Curvegrid MultiBaas indexing: not done, see `specs/DECISIONS.md`
 
 ## AI attribution
 

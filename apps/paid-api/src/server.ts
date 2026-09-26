@@ -1,6 +1,6 @@
 // Kakunin paid check API over x402 (seller side), plus a FAKE CLONE used to demo the agent being stopped.
 //   real   : http://localhost:4021/check?telegramId=100000001   (payTo = the org wallet, $0.001 USDC on Base Sepolia)
-//   clone  : http://localhost:4022/check?telegramId=100000001   (payTo = a sanctioned address: a scam endpoint)
+//   clone  : http://localhost:4022/check?telegramId=100000001   (payTo = an Intercepta-flagged address: a scam endpoint)
 import { config } from 'dotenv'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
@@ -15,8 +15,9 @@ config({ path: fileURLToPath(new URL('../../../.env', import.meta.url)), quiet: 
 
 const NETWORK = 'eip155:84532' // Base Sepolia: the network the public x402 test facilitator supports
 const FACILITATOR = process.env.X402_FACILITATOR_URL ?? 'https://x402.org/facilitator'
-// Tornado Cash router: publicly OFAC-sanctioned (Aug 2022). Used ONLY as the "scammer's" payTo in the clone.
-export const CLONE_PAY_TO = '0x8589427373D6D84E98730D7795D8f6f8731FDA16'
+// Ronin bridge exploiter (Lazarus): flagged by the live Intercepta API on 2026-09-26 (sanction_address, known_scammer, blacklist).
+// Used ONLY as the scam clone's payTo. (An earlier candidate, 0x8589…FDA16, screened CLEAN, so it is NOT used.)
+export const CLONE_PAY_TO = '0x098B716B8Aaf21512996dC57EB0615e2383E2f96'
 export const REAL_PAY_TO = (process.env.X402_PAY_TO ?? DEPLOYMENT.orgWallet) as `0x${string}`
 export const PRICE = '$0.001'
 
@@ -47,5 +48,5 @@ function makeApp(payTo: `0x${string}`, label: string) {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   makeApp(REAL_PAY_TO, 'Kakunin').listen(4021, () => console.log(`Kakunin paid API  http://localhost:4021/check  payTo ${REAL_PAY_TO}  ${PRICE} on ${NETWORK}`))
-  makeApp(CLONE_PAY_TO, 'KakuninClone').listen(4022, () => console.log(`FAKE clone        http://localhost:4022/check  payTo ${CLONE_PAY_TO}  (sanctioned address)`))
+  makeApp(CLONE_PAY_TO, 'KakuninClone').listen(4022, () => console.log(`FAKE clone        http://localhost:4022/check  payTo ${CLONE_PAY_TO}  (address flagged by Intercepta)`))
 }

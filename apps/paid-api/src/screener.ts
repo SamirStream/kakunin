@@ -1,14 +1,15 @@
 // The live screener used by the agent: the REAL Intercepta / Web3 Antivirus API. No mocks (they would not qualify for the
-// prize and would defeat the point). Host + path come from public material (see specs/DECISIONS.md) and are verified by the
-// first live call (`pnpm --filter @kakunin/paid-api probe`), which prints the raw response so `mapVerdict` can be finished
-// against the real schema instead of a guess. Until then unrecognised responses map to risk "unknown" (=> a human decides).
+// prize and would defeat the point). Host, path and response shape were verified with live calls on 2026-09-26
+// (`pnpm --filter @kakunin/paid-api probe`, see specs/DECISIONS.md). Unrecognised responses map to risk "unknown"
+// (=> a human decides) and transport/server errors throw (=> the policy fails closed).
 import type { AddressScreener, AddressVerdict } from '@kakunin/core'
 
 const HOST = process.env.INTERCEPTA_API_URL ?? 'https://api.web3antivirus.io'
-const quickScanPath = (address: string) => `/api/public/v2/extension/account/${address}/quick-scan`
+export type ScanKind = 'quick-scan' | 'toxic-score'
+const scanPath = (address: string, kind: ScanKind) => `/api/public/v2/extension/account/${address}/${kind}`
 
-export async function rawQuickScan(address: string, apiKey: string): Promise<{ status: number; body: unknown }> {
-  const res = await fetch(HOST + quickScanPath(address), {
+export async function rawScan(address: string, apiKey: string, kind: ScanKind = 'quick-scan'): Promise<{ status: number; body: unknown }> {
+  const res = await fetch(HOST + scanPath(address, kind), {
     headers: { accept: 'application/json', 'x-api-key': apiKey },
     signal: AbortSignal.timeout(8000),
   })
@@ -18,10 +19,28 @@ export async function rawQuickScan(address: string, apiKey: string): Promise<{ s
   return { status: res.status, body }
 }
 
-/** Map the Intercepta response onto our risk levels. Finished after the first real call: see DECISIONS.md. */
-export function mapVerdict(address: string, body: unknown): AddressVerdict {
-  const keys = body && typeof body === 'object' ? Object.keys(body as object).join(',') : typeof body
-  return { address, risk: 'unknown', reasons: [`unmapped Intercepta response (fields: ${keys})`] }
+interface Trait { name: string; risk: number; description?: string; txsCount?: number }
+
+// Response shape observed live: { toxicScore: 0..100, traits: [{ name, risk, description }] }.
+// The API publishes no decision thresholds, so these are OURS: they only decide what the agent does with the score.
+const HARD_FLAGS = new Set(['sanction_address', 'known_scammer']) // any of these => critical, whatever the score
+const levelOf = (score: number): AddressVerdict['risk'] => (score >= 75 ? 'critical' : score >= 50 ? 'high' : score >= 20 ? 'medium' : 'low')
+
+/** Map a quick-scan HTTP result onto our risk levels. 404 = not an EOA (quick-scan covers EOAs only) => unknown => a human decides. */
+export function verdictFromResponse(address: string, status: number, body: unknown): AddressVerdict {
+  if (status === 404) return { address, risk: 'unknown', reasons: ['Intercepta quick-scan covers externally-owned accounts only (contract or unseen address)'] }
+  if (status !== 200) throw new Error(`Intercepta HTTP ${status}`) // fail closed: the policy asks a human, never auto-pays
+  const b = body as { toxicScore?: unknown; traits?: unknown }
+  if (typeof b?.toxicScore !== 'number' || !Array.isArray(b.traits)) return { address, risk: 'unknown', reasons: ['unrecognised Intercepta response'] }
+  const traits = (b.traits as Trait[]).filter((t) => t && typeof t.name === 'string' && typeof t.risk === 'number')
+  const hard = traits.some((t) => HARD_FLAGS.has(t.name))
+  const notable = traits.filter((t) => t.risk >= 20 || HARD_FLAGS.has(t.name)).sort((x, y) => y.risk - x.risk).slice(0, 3)
+  const reasons = notable.map((t) => `${t.name} (risk ${t.risk}): ${t.description ?? ''}`.trim())
+  return {
+    address,
+    risk: hard ? 'critical' : levelOf(b.toxicScore),
+    reasons: reasons.length ? [`toxic score ${b.toxicScore}/100`, ...reasons] : [`toxic score ${b.toxicScore}/100, no significant risk trait`],
+  }
 }
 
 export function getScreener(): AddressScreener {
@@ -29,9 +48,8 @@ export function getScreener(): AddressScreener {
   if (!key || key === 'placeholder') throw new Error('INTERCEPTA_API_KEY missing in .env: request a free key at https://intercepta.io/ethglobal')
   return {
     async screenAddress(address) {
-      const { status, body } = await rawQuickScan(address, key)
-      if (status !== 200) throw new Error(`Intercepta HTTP ${status}`) // fail closed: the policy asks a human, never auto-pays
-      return mapVerdict(address, body)
+      const { status, body } = await rawScan(address, key)
+      return verdictFromResponse(address, status, body)
     },
   }
 }

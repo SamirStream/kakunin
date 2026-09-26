@@ -45,15 +45,35 @@ Fake recruiters are how crypto teams get hacked: someone poses as a project memb
 
 ## Prize 1: ENS — Best Use of ENSv2
 
-ENSv2 is the product, not decoration: hierarchical registries (`kakunin-demo.eth` → `team.kakunin-demo.eth` → member), Enhanced Access Control delegation to an HR wallet, a per-team Permissioned Resolver, Universal Resolver V2 reads, registry events for history, and text-record attestations signed by the org's ENS name. Nothing is hardcoded: every answer is read from Sepolia at request time (try the live demo). Files: `packages/core/src/ens.ts`, `packages/core/src/attestation.ts`, `packages/core/src/check.ts`, `scripts/seed-demo.ts`, dashboard panel `apps/web/src/app/api/delegation/route.ts`. Deployed addresses: `deployments/sepolia.json`.
+**Why this project fits.** ENSv2 is the product, not decoration: without the registry, the roles and the signed records there is nothing to check.
+- *Built on ENSv2 Sepolia.* `kakunin-demo.eth` and every organisation created on the site are registered through the ETHRegistrar, with their registries and resolvers deployed through the VerifiableFactory: `packages/core/src/provision.ts` (`startProvision` line 109, `advanceProvision` line 132), addresses in `deployments/sepolia.json`.
+- *Central.* A verdict is computed from the chain: the team registry state and events (`packages/core/src/ens.ts:90` `listMembers`, reads through the Universal Resolver at `ens.ts:61`), the member's records and the attestation signed by the organisation's own ENS name (`packages/core/src/check.ts:93` `checkIdentity`, `packages/core/src/attestation.ts:102` `verifyAttestation`).
+- *Enhanced Access Control is the trust model.* The owner wallet owns the name and holds every role; the operator gets only REGISTRAR, UNREGISTER, RENEW on the team registry and SET_TEXT on the team resolver, and drops its setup rights on the organisation root in the last provisioning step (`provision.ts:248` `tighten`). The dashboard reads the role bitmaps live (`apps/web/src/app/api/delegation/route.ts`).
+- *Functional, not hard-coded.* Registry state, roles, records, attestations and verdicts are read from Sepolia at request time, and organisations are created live from `/create`. The honest caveats: the two sample members of `kakunin-demo.eth` use placeholder Telegram IDs (`packages/core/src/demo.ts:6`), and the @username to numeric-ID mapping used for lookalike detection lives off-chain in the store.
+- *Live demo and open source.* https://kakunin.xyz and https://github.com/SamirStream/kakunin (MIT).
+- *Bonus, agents as namespaces:* not built. The paying agent has its own wallet but no ENS identity (see "What is not done" in the notes to the builder).
 
-**ENSv2 feedback.** The docs (llms-full.txt, the permissioned-registry and verifiable-factory pages) were accurate enough to build against and the deployed ABIs matched them. Friction: no single "create an org with delegated HR" example (we assembled it from four pages); text records survive `unregister` while the name stops resolving through the Universal Resolver, which is right but surprising, so readers must go through the resolver directly for history; and a canonical event for "roles granted" per name would make delegation audits easier.
+**ENSv2 feedback.** The docs (llms-full.txt, the permissioned-registry and verifiable-factory pages) were accurate enough to build against and the deployed ABIs matched them. Friction: no single "create an org with delegated HR" example (we assembled it from four pages); text records survive `unregister` while the name stops resolving through the Universal Resolver, which is right but surprising, so readers must go through the resolver directly for history; a role can only be self-revoked by an account that also holds its admin bit (we found this by a reverted simulation), which the docs could state; and a canonical event for "roles granted" per name would make delegation audits easier.
 
 ## Prize 2: Intercepta — Safe Agent-to-Agent Payments with x402
 
-A live Intercepta call runs before the agent signs and decides what happens next. Flow, one approved and one blocked payment with reasons visible: https://kakunin.xyz/demo (section 5) or `pnpm agent`. Files: `apps/paid-api/src/screener.ts` (the API call), `apps/paid-api/src/agent.ts` (hook before signing), `packages/core/src/screening.ts` (pay / refuse / ask a human, fail closed), `apps/web/src/app/api/paid/*` (seller and fake clone). Payments run on Base Sepolia; screened addresses are real mainnet addresses.
+**Why this project fits.**
+- *Working x402 flow, testnet.* Seller and fake clone (`apps/paid-api/src/server.ts`, and inside the web app `apps/web/src/app/api/paid/*`), buyer agent (`apps/paid-api/src/agent.ts`), payments on Base Sepolia.
+- *A live Intercepta call runs before signing and decides what happens.* The API call is `apps/paid-api/src/screener.ts` (`rawScan`, `GET /api/public/v2/extension/account/{address}/quick-scan` with `x-api-key`, no mock). It is invoked from the x402 hook `onBeforePaymentCreation` (`apps/paid-api/src/agent.ts:45-54`), and `decidePayment` (`packages/core/src/screening.ts:49`) turns the verdict into pay, refuse or ask a human, failing closed.
+- *Real mainnet addresses are screened.* The payee of the real endpoint is our organisation wallet and the clone's payee is the Ronin bridge exploiter address (`apps/web/src/lib/x402.ts:12-13`); both are mainnet addresses, while the payment itself is on a testnet.
+- *One payment goes through, one is blocked, with the reason visible.* https://kakunin.xyz/demo (section 5, button "Run agent purchases") or `pnpm paid` then `pnpm agent`; the run log with the reasons (`sanction_address`, `known_scammer`) is in the README.
+- *README points to the files and has the feedback.* See the README section "Paid check for AI agents".
 
-**Intercepta API feedback (5 lines).** About 2 minutes from key to first call. The reference site sits behind a bot challenge, so scripts and AI tools get a 403; we found the host and path by search and confirmed by calling. `toxicScore` plus `traits[]` is not documented where we could read it, so our pay/refuse thresholds are our own. Quick-scan answers 404 for contract addresses (e.g. Circle's USDC); many payees are contract wallets, so a clear "unsupported" or contract-aware answer would help. Per-trait reasons (`sanction_address`, `known_scammer`) are directly displayable, and latency was about 1 s.
+**Intercepta API feedback (5 lines).**
+- Time to first call: about 2 minutes once the key arrived (the key itself arrives by email after the request, so it is not instant during a 36h event).
+- Confusing: the API reference (docs.web3antivirus.io) sits behind a bot challenge, so scripts and AI tools get a 403; we found the host and path through a public search and confirmed them by calling. The response shape (`toxicScore` + `traits[]`) and its thresholds are not documented where we could read them, so the pay/refuse cut-offs in our policy are our own choice.
+- Missing: quick-scan answers 404 for contract addresses (e.g. Circle's USDC contract); many payees are contract wallets, so a contract-aware answer (or a clear "unsupported") would help agents.
+- Nice: per-trait reasons (`sanction_address`, `known_scammer`, `blacklist`) are directly displayable to a person, and latency was about 1 second.
+- Wish: a documented list of test addresses per risk class in the docs, not only in the chat channel.
+
+## Prize 3: Curvegrid — Best AI Agent Project
+
+**Why this project fits.** The x402 buying agent is a policy-aware transaction agent for agent-to-agent payments. Before signing it checks the token (only the canonical USDC per network, so a lookalike token is refused: `packages/core/src/screening.ts:49`, `apps/paid-api/src/agent.ts:15-24`), the amount (hard stop $0.05, human approval above $0.01), and the counterparty (live Intercepta screening), then pays, refuses or asks a human; a screening error never pays, and an unattended agent treats "ask a human" as a refusal (`agent.ts:52`). It is exercised by tests (`packages/core/test/screening.test.ts`, `apps/paid-api/test/screener.test.ts`) and by the live demo. **MultiBaas was not used**; the track is judged on idea and execution, and the README says so. README items: one-sentence summary, team with handles, and setup and testing instructions are all in `README.md` (section "Curvegrid: Best AI Agent Project" and "Run it").
 
 ## AI use and human contribution (be precise, and edit to match reality)
 
@@ -81,6 +101,9 @@ Kakunin was built with Claude Code (Anthropic) writing most of the code, tests a
 8. **Why testnet only?** ENSv2 is in beta on Sepolia; the design is chain-agnostic and mainnet-ready once ENSv2 ships.
 9. **What is real and what is sample data?** Registries, roles, records, attestations, verdicts and payments are real on Sepolia, and organisations created on the site are real registries. Only the two sample members of `kakunin-demo.eth` use placeholder Telegram IDs; a judge can create their own organisation and onboard their own Telegram account live.
 10. **Did AI write it?** Mostly, under direction, and we say so: see the section above and `specs/`.
+11. **Did you use MultiBaas?** No, and we say so in the README. We apply to the Curvegrid track on the strength of the agent: token, amount and counterparty policy before signing, fail closed.
+12. **How does the agent avoid a lookalike token?** It only accepts the canonical USDC address per network (`POLICY.trustedAssets`), whatever the server advertises. Today this is a local allowlist; a token-scan API check would be an additional layer.
+13. **Are agents ENS namespaces?** Not yet: the agent has its own wallet only. Giving it a subname with delegated roles is the natural next step.
 
 ## Demo video storyboard (2 to 4 minutes, 720p or more, edit out waiting)
 

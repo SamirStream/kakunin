@@ -15,3 +15,8 @@ apps/web/.next/
 apps/web/next-env.d.ts
 *.tsbuildinfo
 .gstack/
+.vercel
+.env.vercel
+
+.vercel
+.env*

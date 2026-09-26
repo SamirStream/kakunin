@@ -37,7 +37,9 @@
 - Consequence: a member who changed their @username and never talked to the bot since could be missed by username lookup until their next interaction; numeric-ID checks are unaffected. Accepted for the hackathon; demo members are refreshed at seed time.
 - Only the numeric ID is attested on-chain (`org.telegram.id`); the username is off-chain registry data.
 
-## 2026-09-26 — Clock
+## 2026-09-26 — Clock (CORRECTED)
+- The dev machine is on UTC+7 (Indochina), NOT JST; git-bash ignores TZ=Asia/Tokyo. Always compute JST with node: new Date().toLocaleString('fr-FR',{timeZone:'Asia/Tokyo'}).
+- Deadline Sun 2026-09-27 09:00 JST = Sun 00:00 UTC = Sun 2026-09-27 07:00 on the machine clock. At 21:15 JST Sat (2026-09-26T12:15Z): 11h44 left. (An earlier note claiming ~21h left at "11:55" was wrong.)
 - Builder is in Tokyo; machine clock is JST. Deadline Sun 2026-09-27 09:00 JST. At 11:55 JST Sat: ~21h left.
 
 ## 2026-09-26 — M0 spike 1: ENSv2 Sepolia registry + EAC + HR delegation (RESULT: OK, all txs succeeded)

@@ -1,0 +1,27 @@
+{
+  "name": "@kakunin/paid-api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "server": "tsx src/server.ts",
+    "agent": "tsx src/agent.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kakunin/core": "workspace:*",
+    "@x402/core": "2.27.0",
+    "@x402/evm": "2.27.0",
+    "@x402/express": "2.27.0",
+    "@x402/fetch": "2.27.0",
+    "dotenv": "18.0.3",
+    "express": "5.2.1",
+    "viem": "2.56.9"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/node": "22.15.0",
+    "tsx": "4.23.15",
+    "vitest": "5.0.1"
+  }
+}

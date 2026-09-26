@@ -18,7 +18,7 @@ if (!process.env.TELEGRAM_WEBHOOK_SECRET) {
 }
 
 const copy = ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_BOT_USERNAME', 'TELEGRAM_WEBHOOK_SECRET', 'ADMIN_SECRET', 'ORG_PRIVATE_KEY', 'HR_PRIVATE_KEY', 'AGENT_PRIVATE_KEY',
-  'INTERCEPTA_API_KEY', 'DEMO_ADMIN_TOKEN', 'SEPOLIA_RPC_URL', 'X402_PAY_TO']
+  'INTERCEPTA_API_KEY', 'DEMO_ADMIN_TOKEN', 'SEPOLIA_RPC_URL', 'X402_PAY_TO', 'KAKUNIN_KEY_SECRET']
 const fixed: Record<string, string> = {
   KAKUNIN_DEMO_SIGNER: '1', // lets the presenter revoke/reset with the admin token; refused without it
   KAKUNIN_AGENT_PUBLIC: '1', // anyone can run the agent demo, rate limited (3 / 10 min per client, 150 / day)

@@ -1,0 +1,91 @@
+// End-to-end check of the multi-organisation admin API against a running web app (local or cloud), signing exactly like the dashboard.
+//   pnpm --filter @kakunin/scripts exec tsx e2e-http.ts <baseUrl> <org.eth>
+// The owner wallet of <org> must be the HR_PRIVATE_KEY in .env (true for orgs created with `pnpm provision <label> <HR address>`).
+import { config } from 'dotenv'
+import { fileURLToPath } from 'node:url'
+config({ path: fileURLToPath(new URL('../.env', import.meta.url)), quiet: true })
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts'
+import { actionMessage, type DashboardAction } from '@kakunin/core/auth'
+import { signInitData } from '@kakunin/core/telegram'
+
+const [base = 'http://127.0.0.1:3000', org = 'kk-e2e-02.eth'] = process.argv.slice(2)
+const owner = privateKeyToAccount(process.env.HR_PRIVATE_KEY as `0x${string}`)
+const stranger = privateKeyToAccount(generatePrivateKey())
+const ok = (c: boolean, m: string) => { console.log(`${c ? 'PASS' : 'FAIL'}  ${m}`); if (!c) process.exitCode = 1 }
+
+async function call(who: typeof owner, action: DashboardAction, target: string, path: string, body: object) {
+  const issued = Date.now()
+  const sig = await who.signMessage({ message: actionMessage(org, action, target, issued) })
+  const res = await fetch(base + path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-kk-issued': String(issued), 'x-kk-sig': sig }, body: JSON.stringify(body) })
+  return { status: res.status, data: (await res.json().catch(() => ({}))) as Record<string, unknown> }
+}
+const check = (input: object) => fetch(base + '/api/check', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ org, ...input }) }).then((r) => r.json() as Promise<{ status: string }>)
+
+const label = 'zed' + Math.floor(Math.random() * 900 + 100)
+const tgId = String(700000000 + Math.floor(Math.random() * 99999999))
+
+let r = await call(stranger, 'add-member', label, `/api/orgs/${org}/members`, { action: 'add', label, role: 'Tester' })
+ok(r.status === 403, `a stranger's signature is refused (${r.status})`)
+r = await call(owner, 'revoke-member', label, `/api/orgs/${org}/members`, { action: 'add', label, role: 'Tester' })
+ok(r.status === 403, `a signature for another action is refused (${r.status})`)
+const alerts = await fetch(`${base}/api/alerts?org=${org}`)
+ok(alerts.status === 401, `private alerts need a signature (${alerts.status})`)
+
+r = await call(owner, 'add-member', label, `/api/orgs/${org}/members`, { action: 'add', label, role: 'Tester' })
+ok(r.status === 200 && typeof r.data.url === 'string', `owner adds ${label} (${r.status}) invite ${String(r.data.url ?? r.data.message).slice(0, 60)}`)
+const members = (await (await fetch(`${base}/api/members?org=${org}&fresh=1`)).json()) as { members: { label: string; status: string }[] }
+ok(members.members.some((m) => m.label === label && m.status === 'active'), `${label} is active on the team registry`)
+ok((await check({ username: label })).status !== 'verified', 'not verified before Telegram onboarding')
+r = await call(owner, 'revoke-member', label, `/api/orgs/${org}/members`, { action: 'revoke', label })
+ok(r.status === 200, `owner revokes ${label} (${r.status})`)
+const after = (await (await fetch(`${base}/api/members?org=${org}&fresh=1`)).json()) as { members: { label: string; status: string }[] }
+ok(after.members.some((m) => m.label === label && m.status === 'former'), `${label} is now a former member`)
+
+// ---- Telegram: admin link, member onboarding (real attestation on-chain), Mini App views ----
+const token = process.env.TELEGRAM_BOT_TOKEN!
+const initFor = (id: number, first: string) => signInitData({ auth_date: String(Math.floor(Date.now() / 1000)), user: JSON.stringify({ id, first_name: first, username: first.toLowerCase() + '_e2e' }) }, token)
+const tg = async (path: string, id: number, first: string, body: object = {}) => {
+  const res = await fetch(base + path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-tg-init': initFor(id, first) }, body: JSON.stringify(body) })
+  return { status: res.status, data: (await res.json().catch(() => ({}))) as Record<string, any> }
+}
+const tokenOf = (url: unknown) => String(url).split('start=')[1]
+const adminId = 910000000 + Math.floor(Math.random() * 99999), memberId = 920000000 + Math.floor(Math.random() * 99999)
+
+const adm = await call(owner, 'telegram-admin', '', `/api/orgs/${org}/telegram`, {})
+ok(adm.status === 200, 'owner mints a Telegram admin link')
+let t = await tg('/api/tg/admin', adminId, 'Boss', { org })
+ok(t.status === 403, `a Telegram account that is not admin is refused (${t.status})`)
+t = await tg('/api/tg/invite', adminId, 'Boss', { token: tokenOf(adm.data.url) })
+ok(t.data.kind === 'admin' && t.data.org === org, 'admin invite is recognised')
+t = await tg('/api/tg/onboard', adminId, 'Boss', { token: tokenOf(adm.data.url) })
+ok(t.data.admin === true, 'the account becomes an admin of the organisation')
+t = await tg('/api/tg/onboard', adminId, 'Boss', { token: tokenOf(adm.data.url) })
+ok(t.status === 404, 'the admin link is single use')
+t = await tg('/api/tg/me', adminId, 'Boss')
+ok(Array.isArray(t.data.adminOf) && t.data.adminOf.includes(org), 'Mini App: /me lists the organisation as administered')
+t = await tg('/api/tg/admin', adminId, 'Boss', { org })
+ok(t.status === 200 && t.data.org === org, 'Mini App: team console loads for that organisation')
+t = await tg('/api/tg/admin', adminId, 'Boss', { org: 'kakunin-demo.eth' })
+ok(t.status === 403, 'an admin of one organisation cannot open another one')
+
+const l2 = 'kai' + Math.floor(Math.random() * 900 + 100)
+const add2 = await call(owner, 'add-member', l2, `/api/orgs/${org}/members`, { action: 'add', label: l2, role: 'Engineer' })
+ok(add2.status === 200, `owner adds ${l2}`)
+const t0 = Date.now()
+t = await tg('/api/tg/onboard', memberId, 'Kai', { token: tokenOf(add2.data.url) })
+ok(t.data.ok === true && t.data.org === org, `member opens the invite from their own Telegram: attested on-chain in ${Math.round((Date.now() - t0) / 1000)}s`)
+const v = await check({ telegramId: String(memberId) }) as { status: string; member?: { label: string } }
+ok(v.status === 'verified' && v.member?.label === l2, 'the web check now answers VERIFIED for that Telegram ID')
+t = await tg('/api/tg/me', memberId, 'Kai')
+ok(t.data.result?.status === 'verified' && t.data.result?.org === org, 'Mini App: My card is verified for that organisation')
+t = await tg('/api/tg/check', adminId, 'Boss', { who: String(memberId) })
+ok(t.data.status === 'verified', 'Mini App: checking that ID across all organisations finds it')
+t = await tg('/api/tg/check', adminId, 'Boss', { who: '@kai_impostor_x', org })
+ok(t.data.status !== 'verified', `an unrelated handle is not verified (${t.data.status})`)
+const feed = await fetch(`${base}/api/alerts?org=${org}`, { headers: await (async () => { const i = Date.now(); return { 'x-kk-issued': String(i), 'x-kk-sig': await owner.signMessage({ message: actionMessage(org, 'session', '', i) }) } })() })
+const fd = (await feed.json()) as { alerts: { detail: string }[]; telegramAdmins: number }
+ok(feed.status === 200 && fd.telegramAdmins >= 1 && fd.alerts.length >= 1, `the owner sees the private alert feed (${fd.alerts?.length} alerts, ${fd.telegramAdmins} Telegram admin)`)
+const r2 = await call(owner, 'revoke-member', l2, `/api/orgs/${org}/members`, { action: 'revoke', label: l2 })
+ok(r2.status === 200 && (await check({ telegramId: String(memberId) })).status === 'former', `revoking ${l2} flips the answer to FORMER`)
+void tgId
+console.log(process.exitCode ? '\nFAILED' : '\nAll checks passed')

@@ -16,6 +16,7 @@ export async function GET() {
     store: usingUpstash() ? 'upstash (persistent)' : e.VERCEL ? 'tmp (ephemeral, per instance)' : 'local file',
     rpc: set('SEPOLIA_RPC_URL') ? 'custom' : 'public default',
     telegram: { token: set('TELEGRAM_BOT_TOKEN'), webhookSecret: set('TELEGRAM_WEBHOOK_SECRET'), adminSecret: set('ADMIN_SECRET'), webhookUrl },
+    provisioning: (e.KAKUNIN_KEY_SECRET ?? '').length >= 16,
     keys: { org: set('ORG_PRIVATE_KEY'), hr: set('HR_PRIVATE_KEY'), agent: set('AGENT_PRIVATE_KEY') },
     demoSigner: { enabled: e.KAKUNIN_DEMO_SIGNER === '1', adminToken: set('DEMO_ADMIN_TOKEN') },
     agent: { intercepta: set('INTERCEPTA_API_KEY'), public: e.KAKUNIN_AGENT_PUBLIC === '1' },

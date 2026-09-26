@@ -12,7 +12,7 @@ const post = (p: string, body: object = {}, headers: Record<string, string> = {}
   fetch(base + p, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body), signal: AbortSignal.timeout(90000) })
 
 console.log(`Kakunin cloud check: ${base}\n`)
-for (const p of ['/', '/check', '/demo', '/org/kakunin-demo.eth']) line((await get(p)).status === 200, `page ${p}`)
+for (const p of ['/', '/check', '/demo', '/create', '/orgs', '/org/kakunin-demo.eth']) line((await get(p)).status === 200, `page ${p}`)
 
 const health = await get('/api/health').then((r) => (r.ok ? r.json() : null)).catch(() => null)
 line(!!health, 'GET /api/health')
@@ -24,6 +24,7 @@ if (health) {
   line(health.telegram.token && health.telegram.webhookSecret && health.keys.org && health.keys.hr, 'Telegram env (token, webhook secret, ORG + HR keys)')
   line(!!health.telegram.webhookUrl && health.telegram.webhookUrl.startsWith(base), 'Telegram webhook points to this site', health.telegram.webhookUrl ? `(${health.telegram.webhookUrl})` : '-> run `pnpm webhook:set`')
   line(health.demoSigner.enabled && health.demoSigner.adminToken, 'demo signer enabled with an admin token')
+  line(health.provisioning === true, 'self-serve organisations enabled (KAKUNIN_KEY_SECRET)', health.provisioning ? '' : '-> set KAKUNIN_KEY_SECRET in Vercel')
   line(health.keys.agent && health.agent.intercepta, 'agent env (AGENT_PRIVATE_KEY + INTERCEPTA_API_KEY)')
 }
 
@@ -36,6 +37,18 @@ const inv = await post('/api/invite', { label: 'alice' })
 line(inv.status === 401, 'invite without a signature is refused (401)', `got ${inv.status}`)
 const paid = await get('/api/paid/real?telegramId=100000001')
 line(paid.status === 402 && !!paid.headers.get('payment-required'), 'x402 seller answers 402 with payment requirements', `got ${paid.status}`)
+const orgsList = await get('/api/orgs').then((r) => r.json()).catch(() => null)
+line(Array.isArray(orgsList?.orgs), 'organisation directory readable', orgsList ? `${orgsList.orgs.length} self-serve org(s)` : '')
+const nope = await get('/api/members?org=ghost-not-here.eth')
+line(nope.status === 404, 'unknown organisation is a clean 404', `got ${nope.status}`)
+const av = await get('/api/orgs/available?label=kakunin').then((r) => r.json()).catch(() => null)
+line(av?.ok === false, 'reserved names cannot be created', av?.reason ?? '')
+const av2 = await get('/api/orgs/available?label=zz-kakunin-probe-' + Math.floor(Math.random() * 1e6)).then((r) => r.json()).catch(() => null)
+line(av2?.ok === true, 'name availability is read from ENSv2', av2 ? String(av2.reason ?? av2.name) : '')
+const privAl = await get('/api/alerts?org=' + (orgsList?.orgs?.[0]?.name ?? 'ghost-not-here.eth'))
+line(privAl.status === 401 || privAl.status === 404, 'a self-serve organisation alert feed is private', `got ${privAl.status}`)
+const mem = await post('/api/orgs/' + (orgsList?.orgs?.[0]?.name ?? 'ghost-not-here.eth') + '/members', { action: 'add', label: 'x' })
+line(mem.status === 401 || mem.status === 404, 'adding a member needs a wallet signature', `got ${mem.status}`)
 const al = await get('/api/alerts').then((r) => r.json()).catch(() => null)
 line(Array.isArray(al?.alerts), 'alerts feed readable', al ? `${al.alerts.length} alert(s)` : '')
 

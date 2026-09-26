@@ -23,6 +23,12 @@ export default function DemoPage() {
     if (r) setAlerts(r.alerts)
   }, [])
   useEffect(() => { loadAlerts(); const t = setInterval(loadAlerts, 3000); return () => clearInterval(t) }, [loadAlerts])
+  // /demo?run=all replays the four read-only scenarios on load (handy for screenshots and dry runs).
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('run') !== 'all') return
+    ;(async () => { for (const s of SCENARIOS) await check(s.id, s.body) })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function check(id: string, body: object) {
     setBusy(id)

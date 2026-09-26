@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ResultCard, type ApiResult } from '@/components/ResultCard'
 
 export default function CheckPage() {
@@ -10,12 +10,11 @@ export default function CheckPage() {
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<ApiResult | null>(null)
 
-  async function run(e: React.FormEvent) {
-    e.preventDefault()
+  async function submit(o: string, w0: string, n: string) {
     setBusy(true); setError(null); setResult(null)
     try {
-      const w = who.trim()
-      const body = { org, displayName: name || undefined, ...(/^\d{5,}$/.test(w) ? { telegramId: w } : { username: w.replace(/^@/, '') || undefined }) }
+      const w = w0.trim()
+      const body = { org: o, displayName: n || undefined, ...(/^\d{5,}$/.test(w) ? { telegramId: w } : { username: w.replace(/^@/, '') || undefined }) }
       const res = await fetch('/api/check', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
       if (!res.ok) throw new Error(`check failed (${res.status})`)
       setResult(await res.json())
@@ -25,6 +24,17 @@ export default function CheckPage() {
       setBusy(false)
     }
   }
+
+  const run = (e: React.FormEvent) => { e.preventDefault(); void submit(org, who, name) }
+  // Shareable link: /check?org=kakunin-demo.eth&who=@alice_kakunin runs the check on load.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search)
+    const w = q.get('who')
+    if (!w) return
+    const o = q.get('org') ?? 'kakunin-demo.eth', n = q.get('name') ?? ''
+    setOrg(o); setWho(w); setName(n)
+    void submit(o, w, n)
+  }, [])
 
   return (
     <div className="mx-auto max-w-xl space-y-6">

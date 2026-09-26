@@ -29,6 +29,18 @@ Three sides:
 - **Member:** HR adds them, the app produces a one-time Telegram deep link, the member opens it from their own account; the bot captures the **numeric Telegram user ID** (never the mutable @username as identity) and the org attests it on ENS. No wallet needed for members.
 - **Victim (free, public):** forward a suspicious message to the bot, or use the `/check` web page.
 
+## Screenshots
+
+Live against the Sepolia deployment (dark theme shown; the UI follows the system theme and is mobile-friendly).
+
+| Live demo (4 real checks + alerts) | Org dashboard (team, EAC delegation, alerts) |
+|---|---|
+| ![Live demo](docs/screenshots/demo.png) | ![Org dashboard](docs/screenshots/dashboard.png) |
+
+| Lookalike caught | Mobile |
+|---|---|
+| ![Lookalike](docs/screenshots/check-lookalike.png) | <img src="docs/screenshots/check-mobile.png" width="260" alt="Mobile check"> |
+
 ## How ENSv2 is used (central, not cosmetic)
 
 | ENSv2 feature | Role in Kakunin | Code |
@@ -88,12 +100,13 @@ pnpm install
 cp .env.example .env            # then: pnpm spike:wallets  (generates throwaway testnet keys into .env)
 # fund the printed ORG and HR addresses with Sepolia ETH (faucet)
 pnpm test                       # 47 tests
+pnpm rehearse                   # replays the whole demo against the live chain, with assertions
 pnpm --filter @kakunin/scripts seed      # idempotent: attester address, members, attestations (add --dry-run to preview)
 pnpm --filter @kakunin/web build && pnpm --filter @kakunin/web start   # http://localhost:3000
 pnpm --filter @kakunin/bot dev           # needs TELEGRAM_BOT_TOKEN (BotFather) in .env
 ```
 
-Every on-chain script announces network, contract, function and arguments **before** sending. `KAKUNIN_DEMO_SIGNER=1` (localhost only) lets `/demo` revoke and reset with the throwaway keys.
+The 4-minute demo script and Q&A cheat sheet are in [`docs/DEMO.md`](docs/DEMO.md). Every on-chain script announces network, contract, function and arguments **before** sending. `KAKUNIN_DEMO_SIGNER=1` (localhost only) lets `/demo` revoke and reset with the throwaway keys.
 
 ## Status
 

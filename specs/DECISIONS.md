@@ -116,7 +116,7 @@
 - **Brand**: chose concept A (hanko seal, kanji 確) from the builder's logo canvas: literal meaning (a seal of approval), local resonance for Tokyo, legible at favicon size. Palette paper #F3EFE6 / ink #15171C / vermilion #C8412B kept OUT of the semantic ok/warn/bad colours so a red brand never reads as danger. Fonts Space Grotesk + Noto Serif JP. Bot avatar set through the Bot API (setMyProfilePhoto). Site is now https://kakunin.xyz (DNS at Namecheap, Telegram webhook moved there).
 - **Proof**: verified answers carry a Proof (registry, resolver, envelope, attester) rendered as a collapsible panel and returned by the API, so a verdict can be re-checked without trusting Kakunin (docs/#verify snippet).
 - **Public API v1** (/api/v1/check, /api/v1/org/{name}, OpenAPI), **profile pages** (/v/<label>) and **badge** (/api/badge/<label>). Profile and badge prove the LABEL, not the person on the other end of a chat; the page says so and points to comparing the attested Telegram ID (a shareable link alone would otherwise create false trust).
-- Attribution: footer, README and LICENSE carry the builder's name and "Powered by the CEO of thearch.consulting".
+- Attribution: footer, Mini App, README and LICENSE carry a single signature, "By Samir Touinssi, CEO of The Arch" (a separate "Powered by" line was removed as redundant).
 
 ## 2026-09-27 — Telegram Mini App (builder request: is it relevant, and if so make the best one)
 - **Relevant**: Telegram is where the attack happens, and a Mini App receives `initData` signed by Telegram, so the opening account is cryptographically known (the bot could only guess: mutable usernames, hidden forwards). It also enables what a bot cannot: a member card, a phone-first admin console, invitation claiming with progress.

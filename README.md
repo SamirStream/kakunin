@@ -200,7 +200,7 @@ This project is built by the team **with** AI assistance, as allowed by the even
 
 ## Team
 
-**Samir Touinssi**, CEO of [The Arch](https://thearch.consulting): builder (GitHub [@SamirStream](https://github.com/SamirStream)). Powered by the CEO of [thearch.consulting](https://thearch.consulting).
+**Samir Touinssi**, CEO of [The Arch](https://thearch.consulting): builder (GitHub [@SamirStream](https://github.com/SamirStream)).
 
 ## License
 

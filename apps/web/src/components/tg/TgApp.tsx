@@ -145,8 +145,8 @@ export function TgApp() {
           {mode !== 'boot' && tab === 'card' && <CardTab me={me} call={call} tg={tg} say={say} reload={loadMe} inviteToken={inviteToken} />}
           {mode !== 'boot' && tab === 'admin' && me?.admin && <AdminTab call={call} tg={tg} say={say} />}
           <p className="pt-3 text-center text-[11px]" style={{ color: 'var(--muted)' }}>
-            Powered by the CEO of{' '}
-            <a className="font-semibold underline" href="https://thearch.consulting" onClick={(e) => { if (tg?.openLink) { e.preventDefault(); tg.openLink('https://thearch.consulting') } }} target="_blank" rel="noopener noreferrer">thearch.consulting</a>
+            By Samir Touinssi, CEO of{' '}
+            <a className="font-semibold underline" href="https://thearch.consulting" onClick={(e) => { if (tg?.openLink) { e.preventDefault(); tg.openLink('https://thearch.consulting') } }} target="_blank" rel="noopener noreferrer">The Arch</a>
           </p>
         </div>
       </main>

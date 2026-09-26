@@ -64,9 +64,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="border-t" style={{ borderColor: 'var(--line)' }}>
           <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs" style={{ color: 'var(--muted)' }}>
             <p>
-              Powered by the CEO of{' '}
-              <a className="font-semibold underline" style={{ color: 'var(--ink)' }} href="https://thearch.consulting" target="_blank" rel="noopener noreferrer">thearch.consulting</a>
-              {' '}· Samir Touinssi
+              By Samir Touinssi, CEO of{' '}
+              <a className="font-semibold underline" style={{ color: 'var(--ink)' }} href="https://thearch.consulting" target="_blank" rel="noopener noreferrer">The Arch</a>
             </p>
             <p>
               <a className="font-semibold underline" style={{ color: 'var(--ink)' }} href="https://t.me/KakuninxyzBot/app" target="_blank" rel="noopener noreferrer">Open the Telegram Mini App</a>

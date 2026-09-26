@@ -27,7 +27,7 @@ Screens: `/` (hook), `/demo` (main), `/org/kakunin-demo.eth` (dashboard), Telegr
 
 | Time | Say | Do |
 |---|---|---|
-| 0:00 | **Hook.** On 18 Sept 2026 Japan's NPA, with the FBI, published a joint advisory on WaterPlum / "Contagious Interview": 30,000+ devices, 7,000+ wallets drained, about 1.7B JPY. Every infection started with a fake recruiter. | Landing page `/` |
+| 0:00 | **Hook.** On 18 Sept 2026 Japan's NPA, the FBI and partners published a joint advisory on WaterPlum / "Contagious Interview": at least 30,000 devices in 100+ countries, over 7,000 wallets, 1.7 billion JPY (10.71 million USD). The actors recruit through social media and job platforms, then have the victim run malicious files in a staged interview (source: FBI IC3 advisory 260918). | Landing page `/` |
 | 0:30 | A "recruiter from KakuninDemo" DMs a developer. Today's defense is "be careful". | `/demo` scenario 1 (`@satoshi_recruiter`) → ❓ **Unknown**. Then scenario 2 (`@alice_kakunn`) → ⚠️ **Lookalike** of the real Alice. Show the **alert** appearing on the right (and on the phone if subscribed). |
 | 1:15 | The real Alice is on the team registry, attested by the org's own ENS name. | Scenario 3 → ✅ **Verified**, show the signer = org address. On the phone: forward a message to the bot, same answer. |
 | 1:45 | **WOW.** HR revokes Bob live. HR is a *separate wallet* that can only manage the team registry. | Scenario 4 (Bob is ✅) → click **HR: revoke Bob** (about 4 s on-chain) → run scenario 4 again → 🕓 **Former member**, revocation date read from ENSv2 events. |

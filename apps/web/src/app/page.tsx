@@ -70,7 +70,7 @@ export default function Home() {
       {/* For projects: self-serve */}
       <section aria-labelledby="projects" className="grid items-start gap-10 lg:grid-cols-[1fr_1.1fr]">
         <div className="space-y-5">
-          <h2 id="projects" className="t-h2">Your project can be on it in two minutes.</h2>
+          <h2 id="projects" className="t-h2">Your project can be on it in about two and a half minutes.</h2>
           <p className="t-lead" style={{ color: 'var(--muted)' }}>Pick a name, give the wallet that owns it, and Kakunin builds the ENSv2 registries for you. Gas is sponsored on testnet, and you keep the name.</p>
           <div className="flex flex-wrap gap-3"><Link href="/create" className="btn btn-primary !px-6 !py-3 !text-base">Create your organisation</Link><Link href="/orgs" className="btn !px-6 !py-3 !text-base">Projects on Kakunin</Link></div>
         </div>

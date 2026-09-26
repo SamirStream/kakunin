@@ -22,7 +22,7 @@ Before recording: `pnpm cloud:check https://kakunin.xyz` is green, demo token pa
 
 *Tape `thearch`, clique « Use my browser wallet », dispo verte, « Create my organisation ». Laisse défiler la checklist (accélère au montage), puis « Open your dashboard ».*
 
-"And it isn't one demo organization. Any project can create its own. Pick a name and the wallet that will own it. Kakunin registers the name to that wallet through the ENS registrar, then deploys the registries and resolvers on ENSv2, and gives a limited operator key just enough rights to run the team. About two minutes, on Sepolia, gas sponsored. Here it is: the name belongs to my wallet, not to Kakunin."
+"And it isn't one demo organization. Any project can create its own. Pick a name and the wallet that will own it. Kakunin registers the name to that wallet through the ENS registrar, then deploys the registries and resolvers on ENSv2, and gives a limited operator key just enough rights to run the team. About two and a half minutes, on Sepolia, gas sponsored. Here it is: the name belongs to my wallet, not to Kakunin."
 
 ## 1:35 to 2:05 — ENSv2 delegation  (dashboard of the new org, panneau Delegation)
 
@@ -61,5 +61,5 @@ Before recording: `pnpm cloud:check https://kakunin.xyz` is green, demo token pa
 - Ne dis pas « mock ». Tout est réel sur Sepolia, sauf les deux IDs Telegram de démo (Alice et Bob) : dis « demo members ».
 - Si une étape échoue en direct, refais la prise. Ne montre jamais une erreur sans l'expliquer.
 - Le wizard poursuit le run même si tu quittes la page (localStorage) : tu peux le lancer, tourner d'autres scènes, puis revenir.
-- Pitch en direct : un juge scanne le QR d'invitation d'un membre (dashboard → Invite) avec son propre Telegram, ou tu lances la création d'une organisation pendant que tu parles (2,5 min).
+- Pitch en direct : un juge scanne le QR d'invitation d'un membre (dashboard → Invite) avec son propre Telegram, ou tu lances la création d'une organisation pendant que tu parles (environ 2,5 min : 137 à 155 s mesurées).
 - Le chiffre d'accroche de la version précédente (avis NPA/FBI du 18 sept 2026) a été retiré : ne le cite que si tu as vérifié la source.

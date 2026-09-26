@@ -4,11 +4,11 @@
 
 > Testnet only (Sepolia). No mainnet funds are ever used.
 
-**Live: <https://kakunin.xyz>** · **[create your own organisation](https://kakunin.xyz/create)** (about 2 minutes, no gas) · try [a lookalike](https://kakunin.xyz/check?who=alice_kakunn), [the real Alice](https://kakunin.xyz/check?who=100000001), the [scripted demo](https://kakunin.xyz/demo?run=all) and the [sample org dashboard](https://kakunin.xyz/org/kakunin-demo.eth). Telegram: [Mini App](https://t.me/KakuninxyzBot/app) · [@KakuninxyzBot](https://t.me/KakuninxyzBot). Also: [status](https://kakunin.xyz/status), [API docs](https://kakunin.xyz/docs).
+**Live: <https://kakunin.xyz>** · **[create your own organisation](https://kakunin.xyz/create)** (about 2.5 minutes, no gas) · try [a lookalike](https://kakunin.xyz/check?who=alice_kakunn), [the real Alice](https://kakunin.xyz/check?who=100000001), the [scripted demo](https://kakunin.xyz/demo?run=all) and the [sample org dashboard](https://kakunin.xyz/org/kakunin-demo.eth). Telegram: [Mini App](https://t.me/KakuninxyzBot/app) · [@KakuninxyzBot](https://t.me/KakuninxyzBot). Also: [status](https://kakunin.xyz/status), [API docs](https://kakunin.xyz/docs).
 
 ## The problem
 
-Impersonation is the #1 social-engineering vector in Web3. Scammers pose as recruiters or team members of real projects on Telegram, X and LinkedIn, then get victims to run malware or sign transactions. On 18 Sept 2026 Japan's National Police Agency, with the FBI and Australian/German agencies, published a joint advisory on **WaterPlum / "Contagious Interview"** (North Korea): 30,000+ devices infected in 100+ countries, 7,000+ wallets drained, about 1.7B JPY moved to the DPRK. Every infection started with a fake recruiter conversation.
+Impersonation is the #1 social-engineering vector in Web3. Scammers pose as recruiters or team members of real projects on Telegram, X and LinkedIn, then get victims to run malware or sign transactions. On 18 September 2026 Japan's National Police Agency and National Cybersecurity Office, the FBI and DC3, Australia's ACSC and Germany's BND and BfV published a joint advisory on **WaterPlum / "Contagious Interview"** (North Korea): at least 30,000 devices infected in more than 100 countries, over 7,000 cryptocurrency wallets drained of funds or credentials, and 1.7 billion JPY (10.71 million USD) transferred to the DPRK. The actors recruit job seekers through social media, job platforms and freelance marketplaces and have them run malicious files during a staged technical interview ([advisory, FBI IC3](https://www.ic3.gov/CSA/2026/260918.pdf); [NPA](https://www.npa.go.jp/bureau/cyber/pdf/20260918_e.pdf)).
 
 Today the only defense is "be careful", and takedown tools chase an infinite list of fakes. **Kakunin certifies the real ones**: a finite, verifiable list that each project publishes on ENSv2.
 
@@ -31,7 +31,7 @@ Three sides:
 - **Member:** HR adds them, the app produces a one-time Telegram deep link, the member opens it from their own account; the bot captures the **numeric Telegram user ID** (never the mutable @username as identity) and the org attests it on ENS. No wallet needed for members.
 - **Victim (free, public):** forward a suspicious message to the bot, or use the `/check` web page.
 
-## Self-serve organisations: any project can join in two minutes
+## Self-serve organisations: any project can join in about 2.5 minutes
 
 Kakunin is not a single-org demo. [`/create`](https://kakunin.xyz/create) takes an ENS name and an owner wallet and, in about 2.5 minutes and 12 Sepolia transactions, builds the whole ENSv2 setup: `<name>.eth` registered **to the owner's wallet** (commit-reveal through the ETHRegistrar), an org `UserRegistry` and a team `UserRegistry` and two `PermissionedResolver`s through the `VerifiableFactory`, and a Kakunin **operator** key with least-privilege EAC roles that drops its setup rights on the org root at the end. Gas is sponsored on testnet.
 
@@ -217,7 +217,7 @@ The whole system deploys as one Vercel project (root directory `apps/web`): web 
 ## Status
 
 - ✅ ENSv2 registry + EAC delegation + attestations + check engine: **verified live on Sepolia**
-- ✅ **Self-serve organisations**: created through the public API and the /create wizard on kakunin.xyz (about 150 s); the full flow (create, add, Telegram onboarding, verify, alert, revoke) is tested live by `scripts/e2e-http.ts`
+- ✅ **Self-serve organisations**: created through the public API and the /create wizard on kakunin.xyz (137, 141 and 155 s in three measured runs); the full flow (create, add, Telegram onboarding, verify, alert, revoke) is tested live by `scripts/e2e-http.ts`
 - ✅ Web app (`/create`, `/orgs`, `/org/<name>`, `/check`, `/demo`, `/docs`, `/status`), deployed on Vercel with Upstash
 - ✅ Telegram bot (webhook) and Mini App: unit-tested, and exercised through signed initData on the live API; not yet screen-tested by the builder in the Telegram client
 - ✅ x402 paid check + agent screened by the live Intercepta API (one payment approved, one blocked): tested on Base Sepolia
@@ -242,6 +242,7 @@ This project is built by the team **with** AI assistance, as allowed by the even
 
 - X: <https://x.com/SamirTouin>
 - LinkedIn: <https://www.linkedin.com/in/tsamir/>
+- Telegram: [@SamirTouin](https://t.me/SamirTouin)
 - GitHub: <https://github.com/SamirStream>
 - All links: <https://linktr.ee/SamirTouin>
 

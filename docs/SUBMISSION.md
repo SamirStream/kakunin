@@ -25,7 +25,7 @@ Projects publish their team on ENSv2. Anyone, including AI agents, checks in one
 
 Fake recruiters are how crypto teams get hacked: someone poses as a project member on Telegram, X or LinkedIn and gets a developer to run malware or sign a transaction. Takedown tools chase an endless list of fakes. Kakunin certifies the real ones instead, a short list each project publishes on ENSv2.
 
-**Project side, self-serve.** Any project creates its organisation at kakunin.xyz/create in about two minutes: it picks an ENS name and the wallet that will own it, and Kakunin registers `<name>.eth` to that wallet through the ENS registrar, deploys its org and team registries (ENSv2 `UserRegistry` proxies) and resolvers, and gives a limited operator key just enough Enhanced Access Control roles to run the team. The owner signs in with a wallet signature (no gas) to add and revoke members, connect Telegram alerts and see private alerts. A sample organisation (`kakunin-demo.eth`) is there to explore. Each organisation has a team registry (`team.<name>.eth`). Every member is a subname. An HR wallet manages the team through ENSv2 Enhanced Access Control (it can register, revoke and edit member records, and cannot touch the project's root name, resolvers or subregistry pointers). The project's own ENS name is the attester.
+**Project side, self-serve.** Any project creates its organisation at kakunin.xyz/create in about two and a half minutes (137 to 155 s in our runs): it picks an ENS name and the wallet that will own it, and Kakunin registers `<name>.eth` to that wallet through the ENS registrar, deploys its org and team registries (ENSv2 `UserRegistry` proxies) and resolvers, and gives a limited operator key just enough Enhanced Access Control roles to run the team. The owner signs in with a wallet signature (no gas) to add and revoke members, connect Telegram alerts and see private alerts. A sample organisation (`kakunin-demo.eth`) is there to explore. Each organisation has a team registry (`team.<name>.eth`). Every member is a subname. An HR wallet manages the team through ENSv2 Enhanced Access Control (it can register, revoke and edit member records, and cannot touch the project's root name, resolvers or subregistry pointers). The project's own ENS name is the attester.
 
 **Member side.** HR sends a one-time Telegram link (or QR). The member opens it from their own account, and the numeric Telegram ID (never the mutable @username) is attested on ENS. No wallet needed.
 
@@ -40,7 +40,7 @@ Fake recruiters are how crypto teams get hacked: someone poses as a project memb
 - **Multi-organisation.** Per-organisation directory, alerts, admins and invites; a shared org resolver used by the web app and the bot; provisioning is a resumable 7-task state machine (`packages/core/src/provision.ts`) advanced by the browser one bounded step at a time (fits serverless limits, hashes saved before waiting so retries never double-send). Operator keys are sealed with AES-256-GCM. Verified live on kakunin.xyz: an organisation created through the public API in 155 s, then 24 end-to-end checks (`scripts/e2e-http.ts`) including a real attestation written from a signed Telegram initData.
 - **Telegram.** grammY bot (cloud webhook), and a Mini App whose server validates Telegram's signed `initData` (HMAC-SHA256, replay window) on every request, so the account opening the app is authenticated. Admin actions are limited to accounts that ran `/subscribe`.
 - **x402 + Intercepta.** `@x402/next` seller (real endpoint and a fake clone whose `payTo` is flagged), `@x402/fetch` buyer with an `onBeforePaymentCreation` hook calling the live Intercepta quick-scan API; policy refuses lookalike tokens, enforces limits and fails closed.
-- **Stack.** TypeScript monorepo (pnpm), viem, Next.js 15 on Vercel, Upstash Redis, 100 unit tests, a security review with live attack tests (`docs/SECURITY.md`), and a one-command production check (`pnpm cloud:check`).
+- **Stack.** TypeScript monorepo (pnpm), viem, Next.js 15 on Vercel, Upstash Redis, 120 tests (core 98, bot 15, paid-api 7), a security review with live attack tests (`docs/SECURITY.md`), and a one-command production check (`pnpm cloud:check`).
 - **Design.** A verdict is a hanko stamped on a document; the kanji carries the meaning (確 元 偽 未) so the answer never depends on colour alone.
 
 ## Prize 1: ENS — Best Use of ENSv2
@@ -65,6 +65,7 @@ Kakunin was built with Claude Code (Anthropic) writing most of the code, tests a
 
 - X: <https://x.com/SamirTouin>
 - LinkedIn: <https://www.linkedin.com/in/tsamir/>
+- Telegram: [@SamirTouin](https://t.me/SamirTouin)
 - GitHub: <https://github.com/SamirStream>
 - All links: <https://linktr.ee/SamirTouin>
 

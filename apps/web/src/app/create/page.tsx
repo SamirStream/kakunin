@@ -161,7 +161,7 @@ export default function CreateOrg() {
       <div className="space-y-6">
         <div className="space-y-3">
           <h1 className="t-h2">Publish your team on ENSv2.</h1>
-          <p className="t-lead" style={{ color: 'var(--muted)' }}>Two answers and about two minutes. You get a team registry only you control, ready for members, the Telegram bot and the API.</p>
+          <p className="t-lead" style={{ color: 'var(--muted)' }}>Two answers and about two and a half minutes. You get a team registry only you control, ready for members, the Telegram bot and the API.</p>
         </div>
         <form onSubmit={start} className="card space-y-5 p-5">
           <label className="block space-y-1 text-sm font-medium">

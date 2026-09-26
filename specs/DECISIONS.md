@@ -134,7 +134,7 @@
 ## 2026-09-27 — From demo to product: self-serve multi-organisation (decided by the builder: "un produit fini, pas une demo")
 
 - **Ownership model**: the ENS name is registered to the owner's wallet; a fresh operator key (sealed with AES-256-GCM, `KAKUNIN_KEY_SECRET`) is the attester (addr(60) of the org name) and the delegated HR. Operator roles: team registry REGISTRAR|UNREGISTER|RENEW, team resolver SET_TEXT, org resolver SET_ADDRESS; REGISTRAR (+admin) on the org registry only during setup, then self-revoked (spike: self-revoke needs the admin bit, plain REGISTRAR reverts; with the admin bit it works, confirmed on chain: kk-e2e-02).
-- **Provisioning cost/time on Sepolia**: about 0.0015 ETH and 140-155 s (the registrar's 60 s commit delay dominates). 12 transactions in 7 tasks; independent transactions of a batch are sent with explicit consecutive nonces and their hashes saved before waiting, so a retry never double-sends. Sponsor funds 0.004 ETH per operator; floor 0.015 ETH, cap 30 organisations, 3 creations per hour per client.
+- **Provisioning cost/time on Sepolia**: about 0.0015 ETH and 137-155 s (three measured runs: 137, 141 and 155 s) (the registrar's 60 s commit delay dominates). 12 transactions in 7 tasks; independent transactions of a batch are sent with explicit consecutive nonces and their hashes saved before waiting, so a retry never double-sends. Sponsor funds 0.004 ETH per operator; floor 0.015 ETH, cap 30 organisations, 3 creations per hour per client.
 - **Store**: per-org scopes; the reference org keeps the old Redis keys (no migration). Reverse indexes (`memberof`, `adminof`) make the per-message identity refresh O(1).
 - **Auth**: wallet signatures over `Kakunin <action>
 org

@@ -36,7 +36,7 @@ export default async function Projects() {
         ))}
       </ul>
       <div className="card flex flex-wrap items-center justify-between gap-4 p-5">
-        <div><h2 className="font-bold">Your project is not here yet</h2><p className="text-sm" style={{ color: 'var(--muted)' }}>Creating it takes about two minutes and no gas.</p></div>
+        <div><h2 className="font-bold">Your project is not here yet</h2><p className="text-sm" style={{ color: 'var(--muted)' }}>Creating it takes about two and a half minutes and no gas.</p></div>
         <Link className="btn btn-primary" href="/create">Create your organisation</Link>
       </div>
     </div>

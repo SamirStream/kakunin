@@ -1,6 +1,6 @@
 import { privateKeyToAccount } from 'viem/accounts'
 import { makeAgent } from '@kakunin/paid-api/agent'
-import { getScreener } from '@kakunin/paid-api/screener'
+import { getScreener, getTokenScreener } from '@kakunin/paid-api/screener'
 import { agentBlocked } from '@/lib/guard'
 import { json } from '@/lib/server'
 
@@ -21,11 +21,11 @@ export async function POST(req: Request) {
   if (blocked) return blocked
   const pk = process.env.AGENT_PRIVATE_KEY
   if (!pk || !/^0x[0-9a-fA-F]{64}$/.test(pk)) return json({ error: 'AGENT_PRIVATE_KEY missing in .env' }, 500)
-  let screener
-  try { screener = getScreener() } catch (e) { return json({ error: (e as Error).message }, 500) }
+  let screener, tokenScreener
+  try { screener = getScreener(); tokenScreener = getTokenScreener() } catch (e) { return json({ error: (e as Error).message }, 500) }
 
   const origin = new URL(req.url).origin
-  const buy = makeAgent({ signer: privateKeyToAccount(pk as `0x${string}`), screener })
+  const buy = makeAgent({ signer: privateKeyToAccount(pk as `0x${string}`), screener, tokenScreener })
   const results = []
   for (const t of TARGETS) {
     const r = await buy(origin + t.path)

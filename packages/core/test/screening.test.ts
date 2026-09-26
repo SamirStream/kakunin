@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decidePayment, type AddressVerdict, type PaymentRequest, type Policy } from '../src/screening'
+import { decidePayment, type AddressVerdict, type PaymentRequest, type Policy, type TokenVerdict } from '../src/screening'
 
 const USDC = '0x036CbD53842c5426634e7929541eC2318f3dCF89'
 const policy: Policy = {
@@ -46,5 +46,34 @@ describe('decidePayment', () => {
   it('rejects nonsense amounts', () => {
     expect(decidePayment(req({ amount: '0' }), verdict('low'), policy).action).toBe('refuse')
     expect(decidePayment(req({ amount: 'abc' }), verdict('low'), policy).action).toBe('refuse')
+  })
+})
+
+describe('decidePayment with a token screener (Intercepta Scan Token)', () => {
+  const clean = verdict('low')
+  const tok = (risk: TokenVerdict['risk'], reasons: string[] = []): TokenVerdict => ({ address: USDC, risk, reasons })
+  it('a clean token changes nothing', () => expect(decidePayment(req(), clean, policy, tok('low')).action).toBe('pay'))
+  it('null (network not covered, e.g. a testnet) leaves the allowlist in charge', () => expect(decidePayment(req(), clean, policy, null).action).toBe('pay'))
+  it('a high-risk token is refused even if it is on the allowlist, with the reason', () => {
+    const d = decidePayment(req(), clean, policy, tok('critical', ['honeypot']))
+    expect(d.action).toBe('refuse')
+    expect(d.reasons.join(' ')).toMatch(/token .*honeypot/)
+  })
+  it('a medium-risk or unknown token needs a human', () => {
+    expect(decidePayment(req(), clean, policy, tok('medium', ['suspicious'])).action).toBe('ask-human')
+    expect(decidePayment(req(), clean, policy, tok('unknown')).action).toBe('ask-human')
+  })
+  it('FAILS CLOSED when the token screener errors', () => {
+    const d = decidePayment(req(), clean, policy, new Error('timeout'))
+    expect(d.action).toBe('ask-human')
+    expect(d.reasons.join(' ')).toMatch(/token screening unavailable/)
+  })
+  it('the allowlist still refuses a lookalike token first, without needing the screener', () => {
+    const d = decidePayment(req({ asset: '0x0000000000000000000000000000000000000bad' }), clean, policy, tok('low'))
+    expect(d.action).toBe('refuse')
+    expect(d.reasons[0]).toMatch(/lookalike token/)
+  })
+  it('a risky counterparty is still refused when the token is clean', () => {
+    expect(decidePayment(req(), verdict('critical', ['sanction_address']), policy, tok('low')).action).toBe('refuse')
   })
 })

@@ -1,9 +1,9 @@
 // Telegram-independent bot logic (unit-testable). index.ts wires these to grammY.
 import { checkIdentity, formatAlert, formatResult, type CheckResult, type DirectoryEntry, type Reader } from '@kakunin/core'
-import type { JsonStore } from '@kakunin/core/store'
+import type { Store } from '@kakunin/core/store'
 
 export interface Deps {
-  store: JsonStore
+  store: Store
   reader: Reader
   org: string
   /** ORG signs + HR writes on-chain; resolves once the records are on the member's subname */
@@ -62,13 +62,13 @@ export async function handleStart(
   payload: string,
 ): Promise<string> {
   if (!payload) return WELCOME
-  const inv = deps.store.peekInvite(payload)
+  const inv = await deps.store.peekInvite(payload)
   if (!inv) return '❌ This invite link is invalid or was already used. Ask your HR for a new one.'
   const telegramId = String(from.id)
   try {
     const { fqn } = await deps.issue(inv.label, telegramId)
-    deps.store.consumeInvite(payload)
-    deps.store.upsertMember({
+    await deps.store.consumeInvite(payload)
+    await deps.store.upsertMember({
       label: inv.label, telegramId, username: from.username?.toLowerCase(), displayName: fullName(from),
     })
     return `✅ You are now verified as ${fqn}.\nYour numeric Telegram ID is attested on ENS by ${deps.org}. If you change your @username, just message me once to refresh it.`
@@ -83,11 +83,11 @@ export interface CheckOutcome { text: string; result?: CheckResult }
 export async function handleCheck(deps: Deps, subject: Subject): Promise<CheckOutcome> {
   if (subject.needsUsername && !subject.username && !subject.telegramId)
     return { text: `This sender hides their account (shown as "${subject.displayName ?? '?'}").\nAsk them for their @username, or paste it here and I will check it.` }
-  const directory: DirectoryEntry[] = deps.store.read().directory
+  const directory: DirectoryEntry[] = await deps.store.directory()
   const result = await checkIdentity(deps.reader, subject, directory)
   if (result.status !== 'verified') {
     const label = subject.username ? `@${subject.username}` : (subject.displayName ?? subject.telegramId ?? 'unknown')
-    deps.store.addAlert({ org: deps.org, kind: result.status, subject, detail: label })
+    await deps.store.addAlert({ org: deps.org, kind: result.status, subject, detail: label })
     await deps.notifyAdmins(formatAlert(deps.org, result.status, label)).catch(() => {})
   }
   return { text: formatResult(result), result }

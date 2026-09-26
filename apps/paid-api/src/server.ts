@@ -8,7 +8,7 @@ import { paymentMiddleware, x402ResourceServer } from '@x402/express'
 import { ExactEvmScheme } from '@x402/evm/exact/server'
 import { HTTPFacilitatorClient } from '@x402/core/server'
 import { DEPLOYMENT, chainReader, checkIdentity, publicClient, type DirectoryEntry } from '@kakunin/core'
-import { JsonStore } from '@kakunin/core/store'
+import { createStore } from '@kakunin/core/store'
 import { readFileSync, existsSync } from 'node:fs'
 
 config({ path: fileURLToPath(new URL('../../../.env', import.meta.url)), quiet: true })
@@ -22,11 +22,11 @@ export const REAL_PAY_TO = (process.env.X402_PAY_TO ?? DEPLOYMENT.orgWallet) as 
 export const PRICE = '$0.001'
 
 const root = fileURLToPath(new URL('../../../', import.meta.url))
-const store = new JsonStore(`${root}data/store.json`)
+const store = createStore(`${root}data/store.json`)
 const reader = chainReader(publicClient(process.env.SEPOLIA_RPC_URL))
-const directory = (): DirectoryEntry[] => {
+const directory = async (): Promise<DirectoryEntry[]> => {
   const demo = existsSync(`${root}demo/directory.json`) ? (JSON.parse(readFileSync(`${root}demo/directory.json`, 'utf8')) as DirectoryEntry[]) : []
-  const live = store.read().directory
+  const live = await store.directory()
   return [...live, ...demo.filter((d) => !live.some((l) => l.telegramId === d.telegramId))]
 }
 
@@ -41,7 +41,7 @@ function makeApp(payTo: `0x${string}`, label: string) {
   )
   app.get('/check', async (req, res) => {
     const q = req.query as { telegramId?: string; username?: string; displayName?: string }
-    res.json({ served_by: label, result: await checkIdentity(reader, q, directory()) })
+    res.json({ served_by: label, result: await checkIdentity(reader, q, await directory()) })
   })
   return app
 }

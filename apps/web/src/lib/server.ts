@@ -1,22 +1,24 @@
 // Server-only helpers (API routes). Never import from a client component.
 import { resolve } from 'node:path'
 import { DEPLOYMENT, chainReader, publicClient, type DirectoryEntry } from '@kakunin/core'
-import { JsonStore } from '@kakunin/core/store'
+import { createStore } from '@kakunin/core/store'
 // Bundled at build time (no runtime fs access), so it also works on serverless hosts.
 import demoDirectory from '../../../../demo/directory.json'
 
 // Local: Next runs with cwd = apps/web and the repo root holds data/ (shared with the bot).
 // Serverless (Vercel): the deployment is read-only, so the store lives in /tmp (per-instance, ephemeral: alerts only).
-const STORE_PATH = process.env.KAKUNIN_STORE_PATH ?? (process.env.VERCEL ? '/tmp/kakunin-store.json' : resolve(process.cwd(), '../../data/store.json'))
-export const store = new JsonStore(STORE_PATH)
+// Cloud: Upstash Redis when its env vars are set (persistent, shared with the Telegram webhook). Without it on Vercel the store
+// falls back to /tmp (per-instance, ephemeral).
+const LOCAL_PATH = process.env.VERCEL ? '/tmp/kakunin-store.json' : resolve(process.cwd(), '../../data/store.json')
+export const store = createStore(LOCAL_PATH)
 export const pub = publicClient(process.env.SEPOLIA_RPC_URL)
 export const reader = chainReader(pub)
 export const org = DEPLOYMENT.orgName
 export const botUsername = () => process.env.TELEGRAM_BOT_USERNAME || 'KakuninBot'
 
 /** Bot-collected directory, plus the committed demo directory as a fallback so /demo works out of the box. */
-export function getDirectory(): DirectoryEntry[] {
-  const live = store.read().directory
+export async function getDirectory(): Promise<DirectoryEntry[]> {
+  const live = await store.directory()
   const demo = demoDirectory as DirectoryEntry[]
   const ids = new Set(live.map((e) => e.telegramId))
   return [...live, ...demo.filter((e) => !ids.has(e.telegramId))]

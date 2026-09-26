@@ -136,7 +136,7 @@ Requirements: Node 22, pnpm.
 pnpm install
 cp .env.example .env            # then: pnpm spike:wallets  (generates throwaway testnet keys into .env)
 # fund the printed ORG and HR addresses with Sepolia ETH (faucet)
-pnpm test                       # 70 tests
+pnpm test                       # 90 tests
 pnpm rehearse                   # replays the whole demo against the live chain, with assertions
 pnpm --filter @kakunin/scripts seed      # idempotent: attester address, members, attestations (add --dry-run to preview)
 pnpm --filter @kakunin/web build && pnpm --filter @kakunin/web start   # http://localhost:3000
@@ -145,11 +145,9 @@ pnpm --filter @kakunin/bot dev           # needs TELEGRAM_BOT_TOKEN (BotFather) 
 
 The 4-minute demo script and Q&A cheat sheet are in [`docs/DEMO.md`](docs/DEMO.md). Every on-chain script announces network, contract, function and arguments **before** sending. `KAKUNIN_DEMO_SIGNER=1` (localhost only) lets `/demo` revoke and reset with the throwaway keys.
 
-## Hosted demo (Vercel)
+## Hosted demo (Vercel): everything runs in the cloud
 
-The web app deploys as-is: **Root Directory `apps/web`**, framework Next.js, pnpm. Environment variables: `SEPOLIA_RPC_URL` (recommended: an Alchemy/Infura Sepolia URL) and `TELEGRAM_BOT_USERNAME=KakuninxyzBot`. **Do not set `KAKUNIN_DEMO_SIGNER`** on a public host.
-
-On the hosted site everything that only reads ENSv2 works (`/check`, the four read-only scenarios of `/demo`, the live member list and EAC delegation panel, and wallet-signed actions in `/org` with a connected HR wallet). The one-click server-side buttons (HR revoke/reset, agent purchases) and the Telegram bot need the local setup above. On Vercel the alerts store lives in `/tmp` (per instance, ephemeral) and the directory falls back to the bundled demo members.
+The whole system deploys as one Vercel project (root directory `apps/web`): web app, **Telegram bot as a webhook**, the **x402 paid API and its fake clone**, the agent demo and a persistent **Upstash Redis** store. Step-by-step setup, variables and a one-command verification (`pnpm cloud:check`) are in [`docs/CLOUD.md`](docs/CLOUD.md). The presenter-only buttons (HR revoke / reset) need a demo admin token; the agent demo is open to everyone but rate limited.
 
 ## Status
 

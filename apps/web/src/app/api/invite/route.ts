@@ -17,6 +17,6 @@ export async function POST(req: Request) {
   const auth = await verifyInviteAuth({ org: DEPLOYMENT.orgName, label, issuedAtMs: issuedAt, signature, allowedSigners: [DEPLOYMENT.hrWallet, DEPLOYMENT.orgWallet] })
   if (!auth.ok) return json({ error: auth.reason }, 401)
   if ((await getMemberState(pub, label)).status !== 'REGISTERED') return json({ error: label + ' is not an active member' }, 409)
-  const inv = store.createInvite(label)
+  const inv = await store.createInvite(label)
   return json({ token: inv.token, url: 'https://t.me/' + botUsername() + '?start=' + inv.token })
 }

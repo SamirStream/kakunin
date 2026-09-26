@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { demoHeaders } from '@/lib/demoToken'
 
 interface Verdict { risk?: string; reasons?: string[]; error?: string }
 interface Row {
@@ -20,7 +21,7 @@ export function AgentPayments() {
 
   async function run() {
     setBusy(true); setErr(null); setRows(null)
-    const res = await fetch('/api/agent', { method: 'POST' })
+    const res = await fetch('/api/agent', { method: 'POST', headers: demoHeaders() })
     const data = await res.json().catch(() => ({}))
     if (res.ok) setRows(data.results)
     else setErr(data.error ?? `failed (${res.status})`)

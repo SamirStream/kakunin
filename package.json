@@ -15,7 +15,12 @@
     "web": "pnpm --filter @kakunin/web build && pnpm --filter @kakunin/web start",
     "rehearse": "pnpm --filter @kakunin/scripts rehearse",
     "paid": "pnpm --filter @kakunin/paid-api server",
-    "agent": "pnpm --filter @kakunin/paid-api agent"
+    "agent": "pnpm --filter @kakunin/paid-api agent",
+    "webhook:set": "pnpm --filter @kakunin/scripts exec tsx telegram-webhook.ts set",
+    "webhook:delete": "pnpm --filter @kakunin/scripts exec tsx telegram-webhook.ts delete",
+    "webhook:info": "pnpm --filter @kakunin/scripts exec tsx telegram-webhook.ts info",
+    "cloud:check": "pnpm --filter @kakunin/scripts exec tsx cloud-check.ts",
+    "vercel:env": "pnpm --filter @kakunin/scripts exec tsx vercel-env.ts"
   },
   "devDependencies": {
     "typescript": "5.9.3"

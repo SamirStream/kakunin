@@ -240,15 +240,30 @@ importers:
 
   apps/web:
     dependencies:
+      '@kakunin/bot':
+        specifier: workspace:*
+        version: link:../bot
       '@kakunin/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@kakunin/paid-api':
         specifier: workspace:*
         version: link:../paid-api
+      '@x402/core':
+        specifier: 2.27.0
+        version: 2.27.0
+      '@x402/evm':
+        specifier: 2.27.0
+        version: 2.27.0(typescript@5.9.3)
+      '@x402/next':
+        specifier: 2.27.0
+        version: 2.27.0(next@15.5.26(@types/node@22.15.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(typescript@5.9.3)
       dotenv:
         specifier: 18.0.3
         version: 18.0.3
+      grammy:
+        specifier: 1.46.0
+        version: 1.46.0
       next:
         specifier: 15.5.26
         version: 15.5.26(@types/node@22.15.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1033,6 +1048,15 @@ packages:
 
   '@x402/fetch@2.27.0':
     resolution: {integrity: sha512-lHJsvBLGRTVw2tVBKyiNfnjrTqqXbks6QKAuFMUGlyBgm6ErcZKaW804jqXUpGOSt+UPHscbbkLclEWHrk5gcQ==}
+
+  '@x402/next@2.27.0':
+    resolution: {integrity: sha512-IXq6PtVtj9ffu3mSblgC5Li2XRZ2oYntlGk/DTpYleI0DtWvPlIGkWUfMLhfOpgHVfxeoyQKe316n3z0aCJhew==}
+    peerDependencies:
+      '@x402/paywall': ^2.27.0
+      next: '>=16.2.6'
+    peerDependenciesMeta:
+      '@x402/paywall':
+        optional: true
 
   abitype@1.2.3:
     resolution: {integrity: sha512-Ofer5QUnuUdTFsBRwARMoWKOH1ND5ehwYhJ3OJ/BQO+StkwQjHw0XyVh4vDttzHB7QOFhPHa/o413PJ82gU/Tg==}
@@ -2354,6 +2378,17 @@ snapshots:
   '@x402/fetch@2.27.0':
     dependencies:
       '@x402/core': 2.27.0
+
+  '@x402/next@2.27.0(next@15.5.26(@types/node@22.15.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(typescript@5.9.3)':
+    dependencies:
+      '@x402/core': 2.27.0
+      '@x402/extensions': 2.27.0(typescript@5.9.3)
+      next: 15.5.26(@types/node@22.15.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+    transitivePeerDependencies:
+      - bufferutil
+      - ethers
+      - typescript
+      - utf-8-validate
 
   abitype@1.2.3(typescript@5.9.3)(zod@3.25.76):
     optionalDependencies:

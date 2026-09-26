@@ -98,3 +98,10 @@
 
 ## 2026-09-26 — Vercel deployment fixes
 - First Vercel build failed: `apps/paid-api/src/agent.ts` used `new URL('../../../.env', import.meta.url)`, which webpack tries to bundle (the file exists locally, not on Vercel). Replaced with a runtime `path.resolve`. Also: the demo directory is now imported as JSON (bundled) instead of read with fs, and the store falls back to `/tmp` when `VERCEL` is set (read-only filesystem). Verified by building without `.env` and running with `VERCEL=1`. Demo signer stays disabled on hosted deployments by design.
+
+## 2026-09-26 — Full cloud mode (builder request: everything must work on the hosted version)
+- **Store**: `Store` is now an async interface with `JsonStore` (local file) and `UpstashStore` (Redis REST, picked when `KV_REST_API_URL/TOKEN` exist). Single-use invites use `GETDEL` (atomic). Same contract suite runs on both backends (fake Redis in tests).
+- **Bot**: `createBot()` shared by the local polling runner and the Vercel webhook route `/api/telegram` (secret header). Local polling refuses to start while a webhook is set (no silent takeover). `pnpm webhook:set|delete|info`.
+- **x402 in the app**: seller routes `/api/paid/real` and `/api/paid/clone` (`@x402/next` `withX402`), so the agent self-fetches its own origin: no separate process, works on Vercel. The standalone Express `apps/paid-api` server stays as a reference.
+- **Access control**: revoke/reset need `KAKUNIN_DEMO_SIGNER=1` and either plain localhost or `x-demo-token` (constant-time); agent demo is optionally public (`KAKUNIN_AGENT_PUBLIC=1`) and rate limited. `/api/health` reports what is configured (booleans only); `pnpm cloud:check` verifies a deployment end to end; `pnpm vercel:env` builds the import file for Vercel.
+- Verified locally (agent through the in-app sellers: paid + blocked in 4 s; token gating; rate limit). Cloud verification needs the Vercel env + Upstash steps in docs/CLOUD.md.

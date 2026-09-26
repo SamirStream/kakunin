@@ -13,8 +13,8 @@ export async function POST(req: Request) {
   if (claimed !== org)
     return json({ status: 'unknown', org: claimed, reason: 'org-not-registered' }, 200)
   const input = { telegramId: body.telegramId?.trim() || undefined, username: body.username?.trim() || undefined, displayName: body.displayName?.trim() || undefined }
-  const result: CheckResult = await checkIdentity(reader, input, getDirectory())
+  const result: CheckResult = await checkIdentity(reader, input, await getDirectory())
   if (result.status !== 'verified' && !(result.status === 'unknown' && result.reason === 'no-identifier'))
-    store.addAlert({ org, kind: result.status, subject: input, detail: input.username ? `@${input.username.replace(/^@/, '')}` : (input.displayName ?? input.telegramId ?? 'unknown') })
+    await store.addAlert({ org, kind: result.status, subject: input, detail: input.username ? `@${input.username.replace(/^@/, '')}` : (input.displayName ?? input.telegramId ?? 'unknown') })
   return json(result)
 }

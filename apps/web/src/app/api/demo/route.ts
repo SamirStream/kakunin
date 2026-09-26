@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   if (action === 'revoke' && label) await revokeDemoMember(hr, label)
   else if (action === 'reset') {
     await seedDemo(ctx('ORG_PRIVATE_KEY'), hr)
-    for (const m of DEMO_MEMBERS) store.upsertMember({ label: m.label, telegramId: m.telegramId, username: m.username, displayName: m.displayName })
+    for (const m of DEMO_MEMBERS) await store.upsertMember({ label: m.label, telegramId: m.telegramId, username: m.username, displayName: m.displayName })
   }
   else return json({ error: 'unknown action' }, 400)
   invalidate('members')

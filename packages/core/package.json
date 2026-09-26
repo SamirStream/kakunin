@@ -20,6 +20,7 @@
     "./store": "./src/store.ts",
     "./messages": "./src/messages.ts",
     "./ens": "./src/ens.ts",
-    "./auth": "./src/auth.ts"
+    "./auth": "./src/auth.ts",
+    "./access": "./src/access.ts"
   }
 }

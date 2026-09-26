@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: Request) {
   const fresh = new URL(req.url).searchParams.has('fresh')
   const data = await cached('members', fresh ? 0 : 3000, async () => {
-    const dir = getDirectory()
+    const dir = await getDirectory()
     const members = await listMembers(pub)
     return Promise.all(
       members.map(async (m) => {

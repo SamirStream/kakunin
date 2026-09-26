@@ -6,6 +6,6 @@ config({ path: fileURLToPath(new URL('../../.env', import.meta.url)), quiet: tru
 
 /** @type {import('next').NextConfig} */
 export default {
-  transpilePackages: ['@kakunin/core', '@kakunin/paid-api'],
+  transpilePackages: ['@kakunin/core', '@kakunin/paid-api', '@kakunin/bot'],
   outputFileTracingRoot: fileURLToPath(new URL('../../', import.meta.url)),
 }

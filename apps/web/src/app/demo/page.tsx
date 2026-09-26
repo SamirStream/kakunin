@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ResultCard, type ApiResult } from '@/components/ResultCard'
 import { AgentPayments } from '@/components/AgentPayments'
+import { demoHeaders, getDemoToken, setDemoToken } from '@/lib/demoToken'
 
 // Scripted demo (specs: 4 minutes). Every check is a REAL read of ENSv2 on Sepolia; nothing here is mocked.
 const SCENARIOS = [
@@ -44,7 +45,7 @@ export default function DemoPage() {
 
   async function act(action: 'revoke' | 'reset') {
     setBusy(action); setNote(null)
-    const res = await fetch('/api/demo', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action, label: 'bob' }) })
+    const res = await fetch('/api/demo', { method: 'POST', headers: { 'content-type': 'application/json', ...demoHeaders() }, body: JSON.stringify({ action, label: 'bob' }) })
     const data = await res.json().catch(() => ({}))
     setNote(res.ok ? (action === 'revoke' ? 'HR revoked bob.team.kakunin-demo.eth on-chain. Check Bob again.' : 'Demo reset on-chain.') : (data.error ?? 'failed'))
     setBusy(null)
@@ -82,8 +83,12 @@ export default function DemoPage() {
             <div className="font-semibold">HR controls (server-side demo signer)</div>
             <p className="text-sm" style={{ color: 'var(--muted)' }}>
               Revokes Bob with the HR wallet — the only permission it holds on the team registry — then run check 4 again: he flips to
-              “Former member”. Requires <span className="mono">KAKUNIN_DEMO_SIGNER=1</span> on localhost; otherwise use the org dashboard with a wallet.
+              “Former member”. Presenter-only: enter the demo admin token (or run locally); anyone else can use the org dashboard with a wallet.
             </p>
+            <input
+              className="input mono max-w-xs" type="password" placeholder="demo admin token" autoComplete="off"
+              defaultValue={typeof window === 'undefined' ? '' : getDemoToken()} onChange={(e) => setDemoToken(e.target.value)}
+            />
             <div className="flex flex-wrap gap-2">
               <button className="btn btn-danger" disabled={busy !== null} onClick={() => act('revoke')}>{busy === 'revoke' ? 'Revoking…' : 'HR: revoke Bob'}</button>
               <button className="btn" disabled={busy !== null} onClick={() => act('reset')}>{busy === 'reset' ? 'Resetting…' : 'Reset demo'}</button>

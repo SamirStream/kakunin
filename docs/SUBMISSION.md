@@ -87,6 +87,8 @@ Samir Touinssi, CEO of The Arch (thearch.consulting). Solo.
 | 2:50 | Demo section 5: agent pays the real API, refuses the clone with Intercepta's reasons | "Agents pay per check over x402, and never pay a scammer." |
 | 3:30 | Repo, README, `pnpm cloud:check` all green | "Open source, tested, and running live." |
 
+Word-for-word narration: `docs/VIDEO_SCRIPT.md`.
+
 Recording checklist: 1280x720 or larger, no waiting (cut it), show the live URL in the address bar, keep the cursor calm, no secrets on screen (the `.env` file, the admin token field, the Vercel dashboard).
 
 ## Before you press Submit
